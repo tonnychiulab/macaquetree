@@ -49,12 +49,16 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   const activeRootNode = useMemo(() => {
     if (!currentRootPath || currentRootPath === rootNode.path) return rootNode;
 
-    const parts = currentRootPath.split('/').slice(1); // Skip root name
+    const relPath = currentRootPath.startsWith(rootNode.path) 
+      ? currentRootPath.substring(rootNode.path.length) 
+      : currentRootPath;
+      
+    const parts = relPath.split('/').filter(Boolean);
     let current: SerializedFileNode = rootNode;
 
     for (const part of parts) {
       if (current.children) {
-        const found = current.children.find(child => child.name === part);
+        const found = current.children.find(child => child.name === part && child.kind === 'directory');
         if (found) {
           current = found;
         } else {
@@ -226,25 +230,49 @@ export const TreeTable: React.FC<TreeTableProps> = ({
         <table className="tree-table" role="treegrid">
           <thead>
             <tr>
-              <th style={{ width: '40%', cursor: 'pointer' }} onClick={() => handleSort('name')}>
+              <th 
+                style={{ width: '40%', cursor: 'pointer' }} 
+                onClick={() => handleSort('name')}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSort('name'); }}
+                tabIndex={0}
+                role="columnheader"
+              >
                 <div style={styles.thContent}>
                   名稱
                   {sortField === 'name' && (sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                 </div>
               </th>
-              <th style={{ width: '25%', cursor: 'pointer' }} onClick={() => handleSort('size')}>
+              <th 
+                style={{ width: '25%', cursor: 'pointer' }} 
+                onClick={() => handleSort('size')}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSort('size'); }}
+                tabIndex={0}
+                role="columnheader"
+              >
                 <div style={styles.thContent}>
                   大小 / 佔用比例
                   {sortField === 'size' && (sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                 </div>
               </th>
-              <th style={{ width: '12%', cursor: 'pointer' }} onClick={() => handleSort('fileCount')}>
+              <th 
+                style={{ width: '12%', cursor: 'pointer' }} 
+                onClick={() => handleSort('fileCount')}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSort('fileCount'); }}
+                tabIndex={0}
+                role="columnheader"
+              >
                 <div style={styles.thContent}>
                   檔案數
                   {sortField === 'fileCount' && (sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                 </div>
               </th>
-              <th style={{ width: '23%', cursor: 'pointer' }} onClick={() => handleSort('lastModified')}>
+              <th 
+                style={{ width: '23%', cursor: 'pointer' }} 
+                onClick={() => handleSort('lastModified')}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSort('lastModified'); }}
+                tabIndex={0}
+                role="columnheader"
+              >
                 <div style={styles.thContent}>
                   修改日期
                   {sortField === 'lastModified' && (sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
@@ -273,14 +301,17 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     onClick={() => onSelectNode?.(node)}
                     onDoubleClick={() => handleDoubleClick(node)}
                     tabIndex={0}
+                    role="row"
+                    aria-level={depth + 1}
+                    aria-expanded={node.kind === 'directory' ? isExpanded : undefined}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleDoubleClick(node);
-                      if (e.key === 'ArrowRight' && node.kind === 'directory' && !isExpanded) toggleExpand(node.path, e as any);
-                      if (e.key === 'ArrowLeft' && node.kind === 'directory' && isExpanded) toggleExpand(node.path, e as any);
+                      if (e.key === 'ArrowRight' && node.kind === 'directory' && !isExpanded) toggleExpand(node.path, e as unknown as React.MouseEvent);
+                      if (e.key === 'ArrowLeft' && node.kind === 'directory' && isExpanded) toggleExpand(node.path, e as unknown as React.MouseEvent);
                     }}
                   >
                     {/* Name Column */}
-                    <td>
+                    <td role="gridcell">
                       <div style={{ ...styles.nameCell, paddingLeft: `${depth * 20}px` }}>
                         {node.kind === 'directory' ? (
                           <button
@@ -313,7 +344,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     </td>
 
                     {/* Size and Percentage Column */}
-                    <td>
+                    <td role="gridcell">
                       <div style={styles.sizeCell}>
                         <span style={styles.sizeText}>{formatBytes(node.size)}</span>
                         <div style={styles.barWrapper}>
@@ -327,14 +358,14 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     </td>
 
                     {/* Files Count Column */}
-                    <td>
+                    <td role="gridcell">
                       <span style={styles.mutedText}>
                         {node.kind === 'directory' ? node.fileCount.toLocaleString() : '-'}
                       </span>
                     </td>
 
                     {/* Date Modified Column */}
-                    <td>
+                    <td role="gridcell">
                       <span style={styles.mutedText}>
                         {node.lastModified
                           ? dateFormatter.format(node.lastModified)

@@ -96,12 +96,18 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
     return results;
   }, [rootNode]);
 
+  const rafRef = React.useRef<number | null>(null);
+
   // Mouse movement for tooltips
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setTooltipPos({
-      x: Math.min(e.clientX - rect.left + 15, width - 270),
-      y: Math.min(e.clientY - rect.top + 15, height - 170)
+    const x = Math.min(e.clientX - rect.left + 15, width - 270);
+    const y = Math.min(e.clientY - rect.top + 15, height - 170);
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    
+    rafRef.current = requestAnimationFrame(() => {
+      setTooltipPos({ x, y });
     });
   };
 

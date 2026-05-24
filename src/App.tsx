@@ -39,7 +39,6 @@ function App() {
   // Speed Calculations
   const [scanSpeed, setScanSpeed] = useState(0);
 
-  const scanStartRef = useRef(0);
   const scannedCountRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -53,15 +52,17 @@ function App() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (isScanning) {
-      scanStartRef.current = Date.now();
+      let lastCount = 0;
       interval = setInterval(() => {
-        const elapsedSeconds = (Date.now() - scanStartRef.current) / 1000;
-        if (elapsedSeconds > 0) {
-          setScanSpeed(Math.round(scannedCountRef.current / elapsedSeconds));
-        }
+        const currentCount = scannedCountRef.current;
+        const delta = currentCount - lastCount;
+        setScanSpeed(delta * 2); // 500ms interval = x2 for per second rate
+        lastCount = currentCount;
       }, 500);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isScanning]);
 
   // Clean up worker on unmount
@@ -184,102 +185,86 @@ function App() {
 
     // Process files locally
     try {
-      const folderMap: Record<string, SerializedFileNode> = { [root.path]: root };
+      const folderMap = new Map<string, SerializedFileNode>();
+      folderMap.set(root.path, root);
 
-      for (let i = 0; i < files.length; i++) {
-        if (abortRef.current?.signal.aborted) {
-          break;
-        }
-
-        const file = files[i];
+      const processFile = (file: File) => {
         const pathParts = file.webkitRelativePath.split('/');
+        const folderPath = pathParts.slice(0, -1).join('/');
         
-        // Build folder nodes for this file path
-        let currentPath = rootPathName;
-        let parentNode = root;
-
-        for (let depth = 1; depth < pathParts.length - 1; depth++) {
-          const folderName = pathParts[depth];
-          const nextPath = `${currentPath}/${folderName}`;
-
-          if (!folderMap[nextPath]) {
-            const folderNode: SerializedFileNode = {
-              name: folderName,
-              path: nextPath,
-              kind: 'directory',
-              size: 0,
-              fileCount: 0,
-              folderCount: 0,
-              depth,
-              children: []
-            };
-            folderMap[nextPath] = folderNode;
-            parentNode.children!.push(folderNode);
-            
-            // Bubble folder count
-            let ancestorPath = currentPath;
-            while (ancestorPath) {
-              const ancestor = folderMap[ancestorPath];
-              if (ancestor) {
-                ancestor.folderCount += 1;
-                ancestorPath = ancestorPath.includes('/') ? ancestorPath.substring(0, ancestorPath.lastIndexOf('/')) : '';
-              } else {
-                break;
-              }
+        // Ensure folder path exists
+        if (!folderMap.has(folderPath)) {
+          let currentPath = root.path;
+          for (let j = 1; j < pathParts.length - 1; j++) {
+            const part = pathParts[j];
+            const nextPath = `${currentPath}/${part}`;
+            if (!folderMap.has(nextPath)) {
+              const newFolder: SerializedFileNode = {
+                name: part,
+                path: nextPath,
+                kind: 'directory',
+                size: 0,
+                fileCount: 0,
+                folderCount: 0,
+                depth: j,
+                children: []
+              };
+              folderMap.set(nextPath, newFolder);
+              folderMap.get(currentPath)!.children!.push(newFolder);
+              root.folderCount++;
             }
+            currentPath = nextPath;
           }
-
-          parentNode = folderMap[nextPath];
-          currentPath = nextPath;
         }
 
-        // Add file node
+        const parentFolder = folderMap.get(folderPath)!;
         const ext = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')).toLowerCase() : '';
         const fileNode: SerializedFileNode = {
           name: file.name,
-          path: `${parentNode.path}/${file.name}`,
+          path: `${parentFolder.path}/${file.name}`,
           kind: 'file',
           size: file.size,
           fileCount: 1,
           folderCount: 0,
-          depth: parentNode.depth + 1,
+          depth: parentFolder.depth + 1,
           extension: ext,
           lastModified: file.lastModified
         };
 
-        parentNode.children!.push(fileNode);
+        parentFolder.children!.push(fileNode);
         
-        // Bubble sizes and counts
-        let checkPath = parentNode.path;
-        while (checkPath) {
-          const node = folderMap[checkPath];
-          if (node) {
-            node.size += file.size;
-            node.fileCount += 1;
-            checkPath = checkPath.includes('/') ? checkPath.substring(0, checkPath.lastIndexOf('/')) : '';
-          } else {
-            break;
+        let currentBubblePath: string | null = folderPath;
+        while (currentBubblePath && currentBubblePath.length >= root.path.length) {
+          const nodeToUpdate = folderMap.get(currentBubblePath);
+          if (nodeToUpdate) {
+            nodeToUpdate.size += file.size;
+            nodeToUpdate.fileCount++;
           }
+          const lastSlashIdx = currentBubblePath.lastIndexOf('/');
+          currentBubblePath = lastSlashIdx > 0 ? currentBubblePath.substring(0, lastSlashIdx) : null;
         }
         
-        // Add stats
         tempFiles++;
         tempSize += file.size;
+      };
 
-        if (i % 250 === 0) {
-          setTotalFiles(tempFiles);
-          setTotalSize(tempSize);
-          scannedCountRef.current = tempFiles;
-          setCurrentScanningPath(fileNode.path);
-          
-          if (i > 0) {
-            await new Promise(r => setTimeout(r, 0));
-          }
+      let lastYieldTime = performance.now();
+      for (let i = 0; i < files.length; i++) {
+        if (abortRef.current?.signal.aborted) {
+          throw new Error('AbortError');
         }
-      }
 
-      if (abortRef.current?.signal.aborted) {
-        return;
+        processFile(files[i]);
+        
+        if (performance.now() - lastYieldTime > 16) {
+          setTotalFiles(tempFiles);
+          setTotalFolders(root.folderCount);
+          setTotalSize(tempSize);
+          scannedCountRef.current = tempFiles + root.folderCount;
+          setCurrentScanningPath(files[i].webkitRelativePath);
+          await new Promise(r => setTimeout(r, 0));
+          lastYieldTime = performance.now();
+        }
       }
 
       // Sort children by size recursively
@@ -300,7 +285,9 @@ function App() {
       setIsScanning(false);
 
     } catch (err: any) {
-      setError(err.message || '分析目錄失敗。');
+      if (err.message !== 'AbortError') {
+        setError(err.message || '分析目錄失敗。');
+      }
       setIsScanning(false);
     }
   };
@@ -381,6 +368,7 @@ function App() {
                       directory: ""
                     } as any)}
                     onChange={handleFallbackScan}
+                    onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
                     style={{ display: 'none' }}
                   />
                 </div>

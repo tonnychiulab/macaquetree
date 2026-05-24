@@ -103,7 +103,7 @@ async function scanHandle(
           
           // Throttled progress report
           reportProgress(fileNode.path);
-        } catch (fileErr) {
+        } catch (fileErr: any) {
           // Gracefully skip files with permission or locked errors
           console.warn(`Failed to read file: ${entry.name}`, fileErr);
         }
@@ -114,7 +114,7 @@ async function scanHandle(
           node.size += subDirNode.size;
           node.fileCount += subDirNode.fileCount;
           node.folderCount += 1 + subDirNode.folderCount;
-        } catch (dirErr) {
+        } catch (dirErr: any) {
           console.warn(`Failed to read directory: ${entry.name}`, dirErr);
         }
       }

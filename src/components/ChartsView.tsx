@@ -120,7 +120,14 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ rootNode }) => {
           <div style={styles.ringChartContainer}>
             {/* SVG Ring Chart */}
             <div style={styles.svgWrapper}>
-              <svg width="200" height="200" viewBox="0 0 200 200">
+              <svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 200 200"
+                style={{ filter: 'drop-shadow(0 0 20px rgba(0, 242, 254, 0.1))' }}
+                role="img"
+                aria-label="檔案類型比例環形圖"
+              >
                 <circle
                   cx="100"
                   cy="100"
@@ -202,8 +209,9 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ rootNode }) => {
                         style={{
                           ...styles.barFill,
                           width: `${ratio * 100}%`,
-                          background: `linear-gradient(90deg, ${color}80, ${color})`,
-                          boxShadow: `0 0 6px ${color}40`,
+                          background: `linear-gradient(135deg, color-mix(in srgb, ${color} 30%, transparent), transparent)`,
+                          borderLeft: `3px solid ${color}`,
+                          boxShadow: `inset 0 0 20px color-mix(in srgb, ${color} 10%, transparent)`,
                         }}
                       />
                     </div>
