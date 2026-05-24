@@ -1,0 +1,309 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Color Palette - Premium Neon Cyberpunk Dark */
+  --bg-main: #0B0B0F;
+  --bg-card: rgba(18, 18, 24, 0.7);
+  --bg-sidebar: rgba(10, 10, 14, 0.6);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(0, 242, 254, 0.15);
+  
+  /* Primary Accent: Cyber Cyan to Neon Purple */
+  --accent-cyan: #00F2FE;
+  --accent-purple: #4FACFE;
+  --accent-glow: linear-gradient(135deg, #00F2FE, #4FACFE);
+  
+  /* Severity Colors representing Space Usage */
+  --color-critical: #FF4A6B; /* Big size */
+  --color-warning: #FFB03A;  /* Medium size */
+  --color-safe: #00E676;     /* Small size */
+  --color-info: #00B0FF;
+  
+  /* Text Colors */
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  
+  /* Layout sizes */
+  --sidebar-width: 280px;
+  --header-height: 70px;
+  
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global Reset & Scrollbars */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(79, 172, 254, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(0, 242, 254, 0.05) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 14, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-glow);
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(0, 242, 254, 0.2);
+  box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.08);
+}
+
+.glass-sidebar {
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-color);
+}
+
+/* Gradient Texts & Badges */
+.text-gradient {
+  background: var(--accent-glow);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-btn {
+  background: var(--accent-glow);
+  color: #000;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+}
+
+.glow-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
+  opacity: 0.95;
+}
+
+.glow-btn:active {
+  transform: translateY(0);
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Progress bar glowing animation */
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent-glow);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-glow-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shine 1.5s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Glowing Pulsing Scanner Effect */
+.scan-glow {
+  animation: pulse-glow 2s infinite alternate;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+    border-color: rgba(0, 242, 254, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
+    border-color: rgba(0, 242, 254, 0.6);
+  }
+}
+
+/* Tree Table Styles */
+.tree-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tree-table th {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tree-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 0.925rem;
+  vertical-align: middle;
+}
+
+.tree-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.tree-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.tree-row.selected {
+  background-color: rgba(0, 242, 254, 0.05);
+  border-left: 2px solid var(--accent-cyan);
+}
+
+/* Tree Expander Button */
+.expander-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-right: 6px;
+  transition: all 0.2s ease;
+}
+
+.expander-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* File Icon coloring based on category */
+.icon-directory {
+  color: var(--accent-purple);
+  filter: drop-shadow(0 0 4px rgba(79, 172, 254, 0.2));
+}
+
+.icon-file {
+  color: var(--text-secondary);
+}
+
+/* Color indicator by size ratio */
+.ratio-bar {
+  height: 8px;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.ratio-bar.critical {
+  background: var(--color-critical);
+  box-shadow: 0 0 6px rgba(255, 74, 107, 0.3);
+}
+
+.ratio-bar.warning {
+  background: var(--color-warning);
+  box-shadow: 0 0 6px rgba(255, 176, 58, 0.3);
+}
+
+.ratio-bar.safe {
+  background: var(--color-safe);
+  box-shadow: 0 0 6px rgba(0, 230, 118, 0.3);
+}
+
+/* Tooltip premium styling */
+.premium-tooltip {
+  position: absolute;
+  background: rgba(12, 12, 18, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  pointer-events: none;
+  max-width: 250px;
+}
