@@ -4,6 +4,7 @@
  * Format bytes to a human-readable string (e.g., 10.24 GB)
  */
 export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
   if (bytes === 0) return '0 B';
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;

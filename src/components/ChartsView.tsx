@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { SerializedFileNode } from '../workers/scan.worker';
+import type { SerializedFileNode } from '../types';
 import { formatBytes, getExtensionColor, getExtensionCategory } from '../utils/helpers';
 
 interface ChartsViewProps {
@@ -100,7 +100,15 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ rootNode }) => {
   const strokeWidth = 18;
   const circumference = 2 * Math.PI * radius;
 
-  let currentOffset = 0;
+  const computedRingSegments = useMemo(() => {
+    let offset = 0;
+    return ringSegments.map(seg => {
+      const strokeDash = (seg.percentage / 100) * circumference;
+      const strokeOffset = circumference - offset;
+      offset += strokeDash;
+      return { ...seg, strokeDash, strokeOffset };
+    });
+  }, [ringSegments, circumference]);
 
   return (
     <div style={styles.container}>
@@ -121,11 +129,7 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ rootNode }) => {
                   stroke="rgba(255, 255, 255, 0.03)"
                   strokeWidth={strokeWidth}
                 />
-                {ringSegments.map((seg, idx) => {
-                  const strokeDash = (seg.percentage / 100) * circumference;
-                  const strokeOffset = circumference - currentOffset;
-                  currentOffset += strokeDash;
-
+                {computedRingSegments.map((seg, idx) => {
                   return (
                     <circle
                       key={idx}
@@ -135,8 +139,8 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ rootNode }) => {
                       fill="transparent"
                       stroke={seg.color}
                       strokeWidth={strokeWidth}
-                      strokeDasharray={`${strokeDash} ${circumference - strokeDash}`}
-                      strokeDashoffset={strokeOffset}
+                      strokeDasharray={`${seg.strokeDash} ${circumference - seg.strokeDash}`}
+                      strokeDashoffset={seg.strokeOffset}
                       transform="rotate(-90 100 100)"
                       strokeLinecap={seg.percentage > 1.5 ? 'round' : 'butt'}
                       style={{
@@ -246,12 +250,12 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ rootNode }) => {
                     <td>{formatBytes(stat.size)}</td>
                     <td>
                       <div style={styles.tableRatioCell}>
-                        <span>{((stat.size / rootNode.size) * 100).toFixed(2)}%</span>
+                        <span>{rootNode.size > 0 ? ((stat.size / rootNode.size) * 100).toFixed(2) : '0.00'}%</span>
                         <div style={styles.miniBarTrack}>
                           <div
                             style={{
                               height: '100%',
-                              width: `${(stat.size / rootNode.size) * 100}%`,
+                              width: `${rootNode.size > 0 ? (stat.size / rootNode.size) * 100 : 0}%`,
                               backgroundColor: stat.color,
                               borderRadius: '2px',
                             }}

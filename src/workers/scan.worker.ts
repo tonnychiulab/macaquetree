@@ -1,17 +1,6 @@
 // Web Worker for scanning directories in a separate thread.
 
-export interface SerializedFileNode {
-  name: string;
-  path: string;
-  kind: 'file' | 'directory';
-  size: number;
-  fileCount: number;
-  folderCount: number;
-  depth: number;
-  extension?: string;
-  lastModified?: number;
-  children?: SerializedFileNode[];
-}
+import type { SerializedFileNode } from '../types';
 
 // Global stats for progress reporting
 let totalFiles = 0;
@@ -69,7 +58,9 @@ async function scanHandle(
     children: []
   };
 
-  totalFolders++;
+  if (depth > 0) {
+    totalFolders++;
+  }
   
   // Throttled progress updates to main thread
   reportProgress(node.path);

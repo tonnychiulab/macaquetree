@@ -3,7 +3,8 @@ import { StatsView } from './components/StatsView';
 import { TreeTable } from './components/TreeTable';
 import { TreemapView } from './components/TreemapView';
 import { ChartsView } from './components/ChartsView';
-import type { SerializedFileNode } from './workers/scan.worker';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import type { SerializedFileNode } from './types';
 import { 
   FolderSearch, 
   Terminal, 
@@ -36,8 +37,11 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   // Speed Calculations
-  const [scannedCount, setScannedCount] = useState(0);
   const [scanSpeed, setScanSpeed] = useState(0);
+
+  const scanStartRef = useRef(0);
+  const scannedCountRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   const workerRef = useRef<Worker | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -47,18 +51,18 @@ function App() {
 
   // Scan speed ticker
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval>;
     if (isScanning) {
-      const startTime = Date.now();
+      scanStartRef.current = Date.now();
       interval = setInterval(() => {
-        const elapsedSeconds = (Date.now() - startTime) / 1000;
+        const elapsedSeconds = (Date.now() - scanStartRef.current) / 1000;
         if (elapsedSeconds > 0) {
-          setScanSpeed(Math.round(scannedCount / elapsedSeconds));
+          setScanSpeed(Math.round(scannedCountRef.current / elapsedSeconds));
         }
       }, 500);
     }
     return () => clearInterval(interval);
-  }, [isScanning, scannedCount]);
+  }, [isScanning]);
 
   // Clean up worker on unmount
   useEffect(() => {
@@ -89,7 +93,7 @@ function App() {
       setTotalFolders(0);
       setTotalSize(0);
       setScanSpeed(0);
-      setScannedCount(0);
+      scannedCountRef.current = 0;
       setCurrentScanningPath('取得授權，啟動掃描執行緒...');
 
       // Spawn Vite-compatible Web Worker
@@ -106,7 +110,7 @@ function App() {
           setTotalFolders(totalFolders);
           setTotalSize(totalSize);
           setCurrentScanningPath(currentPath);
-          setScannedCount(totalFiles + totalFolders);
+          scannedCountRef.current = totalFiles + totalFolders;
         } else if (type === 'complete') {
           setRootNode(rootNode);
           setTotalFiles(totalFiles);
@@ -122,6 +126,13 @@ function App() {
           worker.terminate();
           workerRef.current = null;
         }
+      };
+
+      worker.onerror = (event) => {
+        setError(`掃描引擎載入失敗: ${event.message}`);
+        setIsScanning(false);
+        worker.terminate();
+        workerRef.current = null;
       };
 
       // Send start message to worker
@@ -140,6 +151,8 @@ function App() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    abortRef.current = new AbortController();
+
     setIsScanning(true);
     setError(null);
     setRootNode(null);
@@ -148,6 +161,7 @@ function App() {
     setTotalFolders(0);
     setTotalSize(0);
     setScanSpeed(0);
+    scannedCountRef.current = 0;
     
     const startTime = Date.now();
     let tempFiles = 0;
@@ -173,6 +187,10 @@ function App() {
       const folderMap: Record<string, SerializedFileNode> = { [root.path]: root };
 
       for (let i = 0; i < files.length; i++) {
+        if (abortRef.current?.signal.aborted) {
+          break;
+        }
+
         const file = files[i];
         const pathParts = file.webkitRelativePath.split('/');
         
@@ -197,7 +215,18 @@ function App() {
             };
             folderMap[nextPath] = folderNode;
             parentNode.children!.push(folderNode);
-            root.folderCount += 1;
+            
+            // Bubble folder count
+            let ancestorPath = currentPath;
+            while (ancestorPath) {
+              const ancestor = folderMap[ancestorPath];
+              if (ancestor) {
+                ancestor.folderCount += 1;
+                ancestorPath = ancestorPath.includes('/') ? ancestorPath.substring(0, ancestorPath.lastIndexOf('/')) : '';
+              } else {
+                break;
+              }
+            }
           }
 
           parentNode = folderMap[nextPath];
@@ -240,9 +269,17 @@ function App() {
         if (i % 250 === 0) {
           setTotalFiles(tempFiles);
           setTotalSize(tempSize);
-          setScannedCount(tempFiles);
+          scannedCountRef.current = tempFiles;
           setCurrentScanningPath(fileNode.path);
+          
+          if (i > 0) {
+            await new Promise(r => setTimeout(r, 0));
+          }
         }
+      }
+
+      if (abortRef.current?.signal.aborted) {
+        return;
       }
 
       // Sort children by size recursively
@@ -273,6 +310,10 @@ function App() {
       workerRef.current.terminate();
       workerRef.current = null;
     }
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
     setIsScanning(false);
     setCurrentScanningPath('掃描已被使用者取消。');
   };
@@ -286,6 +327,8 @@ function App() {
     setScanTime(0);
     setScanSpeed(0);
     setError(null);
+    scannedCountRef.current = 0;
+    setCurrentScanningPath('');
   };
 
   return (
@@ -350,9 +393,12 @@ function App() {
       {/* Main Content Area */}
       <main style={styles.mainContent}>
         {error && (
-          <div className="glass-panel" style={styles.errorBanner}>
-            <Terminal size={18} color="var(--color-critical)" />
-            <span>{error}</span>
+          <div className="glass-panel" style={styles.errorBanner} role="alert">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+              <Terminal size={18} color="var(--color-critical)" />
+              <span>{error}</span>
+            </div>
+            <button onClick={() => setError(null)} style={styles.closeBtn} aria-label="關閉錯誤訊息">✕</button>
           </div>
         )}
 
@@ -472,6 +518,7 @@ function App() {
         {/* Dashboard Analytics View */}
         {rootNode && (
           <div style={styles.dashboard}>
+            <ErrorBoundary>
             {/* Stats Cards */}
             <StatsView
               totalSize={totalSize}
@@ -483,8 +530,10 @@ function App() {
             />
 
             {/* Tabs Selector Navigation */}
-            <div className="glass-panel" style={styles.tabsContainer}>
+            <div className="glass-panel" style={styles.tabsContainer} role="tablist">
               <button
+                role="tab"
+                aria-selected={activeTab === 'tree'}
                 onClick={() => setActiveTab('tree')}
                 style={{
                   ...styles.tabItem,
@@ -496,6 +545,8 @@ function App() {
                 樹狀目錄表格 (Tree Table)
               </button>
               <button
+                role="tab"
+                aria-selected={activeTab === 'treemap'}
                 onClick={() => setActiveTab('treemap')}
                 style={{
                   ...styles.tabItem,
@@ -507,6 +558,8 @@ function App() {
                 磁碟分佈矩形圖 (Treemap)
               </button>
               <button
+                role="tab"
+                aria-selected={activeTab === 'charts'}
                 onClick={() => setActiveTab('charts')}
                 style={{
                   ...styles.tabItem,
@@ -541,6 +594,7 @@ function App() {
                 <ChartsView rootNode={rootNode} />
               )}
             </div>
+            </ErrorBoundary>
           </div>
         )}
       </main>
@@ -645,6 +699,17 @@ const styles = {
     color: '#FF6B8B',
     fontSize: '0.9rem',
     fontWeight: 500,
+  },
+  closeBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#FF6B8B',
+    cursor: 'pointer',
+    fontSize: '1.2rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '4px',
   },
   scanningPanel: {
     padding: '28px',

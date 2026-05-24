@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import type { SerializedFileNode } from '../workers/scan.worker';
+import type { SerializedFileNode } from '../types';
 import { formatBytes, getExtensionColor, getExtensionCategory } from '../utils/helpers';
 
 interface TreemapViewProps {
@@ -100,8 +100,8 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setTooltipPos({
-      x: e.clientX - rect.left + 15,
-      y: e.clientY - rect.top + 15
+      x: Math.min(e.clientX - rect.left + 15, width - 270),
+      y: Math.min(e.clientY - rect.top + 15, height - 170)
     });
   };
 
@@ -135,6 +135,8 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
           style={styles.svg}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredRect(null)}
+          role="img"
+          aria-label="磁碟空間分佈圖"
         >
           {rects.map((r, idx) => {
             const isSelected = selectedNode?.path === r.path;
@@ -246,7 +248,7 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
                 <div style={styles.tooltipRow}>
                   <span>比例:</span>
                   <span style={styles.tooltipValue}>
-                    {((hoveredRect.size / rootNode.size) * 100).toFixed(2)}%
+                    {rootNode.size > 0 ? ((hoveredRect.size / rootNode.size) * 100).toFixed(2) : '0.00'}%
                   </span>
                 </div>
               </div>

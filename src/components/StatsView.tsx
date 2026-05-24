@@ -11,7 +11,7 @@ interface StatsViewProps {
   scanSpeed: number; // files per second
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({
+export const StatsView: React.FC<StatsViewProps> = React.memo(({
   totalSize,
   totalFiles,
   totalFolders,
@@ -95,7 +95,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
       </div>
     </div>
   );
-};
+});
 
 const styles = {
   statsGrid: {

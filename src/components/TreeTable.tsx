@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { Folder, File, ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, FolderUp } from 'lucide-react';
-import type { SerializedFileNode } from '../workers/scan.worker';
+import type { SerializedFileNode } from '../types';
 import { formatBytes, getRatioColorClass } from '../utils/helpers';
 
 interface TreeTableProps {
@@ -11,6 +11,14 @@ interface TreeTableProps {
 
 type SortField = 'name' | 'size' | 'fileCount' | 'lastModified';
 type SortOrder = 'asc' | 'desc';
+
+const dateFormatter = new Intl.DateTimeFormat('zh-TW', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 export const TreeTable: React.FC<TreeTableProps> = ({
   rootNode,
@@ -25,9 +33,17 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   });
   // Search query
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   // Sorting state
   const [sortField, setSortField] = useState<SortField>('size');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // Reset state when rootNode changes
+  React.useEffect(() => {
+    setExpandedPaths({ [rootNode.path]: true });
+    setCurrentRootPath('');
+    setSearchQuery('');
+  }, [rootNode.path]);
 
   // Find the sub-node that matches the current breadcrumb root path
   const activeRootNode = useMemo(() => {
@@ -113,8 +129,8 @@ export const TreeTable: React.FC<TreeTableProps> = ({
       
       if (!isCurrentRoot) {
         // If searching, only include nodes matching search query
-        if (searchQuery) {
-          const match = node.name.toLowerCase().includes(searchQuery.toLowerCase());
+        if (deferredSearchQuery) {
+          const match = node.name.toLowerCase().includes(deferredSearchQuery.toLowerCase());
           if (match) {
             list.push({ node, depth: currentDepth });
           }
@@ -126,7 +142,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
       const isExpanded = expandedPaths[node.path];
       
       // If node is expanded or we are searching (search expands everything), traverse children
-      if (node.children && (isExpanded || searchQuery || isCurrentRoot)) {
+      if (node.children && (isExpanded || deferredSearchQuery || isCurrentRoot)) {
         // Copy and sort children based on sorting parameters
         const sortedChildren = [...node.children].sort((a, b) => {
           let comparison = 0;
@@ -151,7 +167,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
 
     traverse(activeRootNode, 0);
     return list;
-  }, [activeRootNode, expandedPaths, searchQuery, sortField, sortOrder]);
+  }, [activeRootNode, expandedPaths, deferredSearchQuery, sortField, sortOrder]);
 
   return (
     <div style={styles.container}>
@@ -175,12 +191,12 @@ export const TreeTable: React.FC<TreeTableProps> = ({
             {breadcrumbs.map((bc, idx) => (
               <React.Fragment key={bc.path}>
                 {idx > 0 && <span style={styles.separator}>/</span>}
-                <span
+                <button
                   style={idx === breadcrumbs.length - 1 ? styles.bcActive : styles.bcLink}
                   onClick={() => navigateToBreadcrumb(bc.path)}
                 >
                   {bc.name}
-                </span>
+                </button>
               </React.Fragment>
             ))}
           </div>
@@ -192,12 +208,13 @@ export const TreeTable: React.FC<TreeTableProps> = ({
           <input
             type="text"
             placeholder="搜尋檔案或資料夾名稱..."
+            aria-label="搜尋檔案或資料夾名稱"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={styles.searchInput}
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} style={styles.clearBtn}>
+            <button onClick={() => setSearchQuery('')} style={styles.clearBtn} aria-label="清除搜尋">
               ✕
             </button>
           )}
@@ -206,7 +223,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
 
       {/* Table Container */}
       <div className="glass-panel" style={styles.tableWrapper}>
-        <table className="tree-table">
+        <table className="tree-table" role="treegrid">
           <thead>
             <tr>
               <th style={{ width: '40%', cursor: 'pointer' }} onClick={() => handleSort('name')}>
@@ -244,7 +261,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
               </tr>
             ) : (
               visibleRows.map(({ node, depth }) => {
-                const ratioOfParent = node.size / activeRootNode.size;
+                const ratioOfParent = activeRootNode.size > 0 ? node.size / activeRootNode.size : 0;
                 const ratioPercentage = (ratioOfParent * 100).toFixed(1);
                 const isSelected = selectedNode?.path === node.path;
                 const isExpanded = !!expandedPaths[node.path];
@@ -255,6 +272,12 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     className={`tree-row ${isSelected ? 'selected' : ''}`}
                     onClick={() => onSelectNode?.(node)}
                     onDoubleClick={() => handleDoubleClick(node)}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleDoubleClick(node);
+                      if (e.key === 'ArrowRight' && node.kind === 'directory' && !isExpanded) toggleExpand(node.path, e as any);
+                      if (e.key === 'ArrowLeft' && node.kind === 'directory' && isExpanded) toggleExpand(node.path, e as any);
+                    }}
                   >
                     {/* Name Column */}
                     <td>
@@ -263,6 +286,8 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                           <button
                             onClick={(e) => toggleExpand(node.path, e)}
                             style={styles.expander}
+                            aria-expanded={isExpanded}
+                            aria-label={`展開${node.name}`}
                           >
                             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                           </button>
@@ -312,13 +337,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     <td>
                       <span style={styles.mutedText}>
                         {node.lastModified
-                          ? new Date(node.lastModified).toLocaleString('zh-TW', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
+                          ? dateFormatter.format(node.lastModified)
                           : '-'}
                       </span>
                     </td>
@@ -384,12 +403,20 @@ const styles = {
     padding: '2px 6px',
     borderRadius: '4px',
     transition: 'all 0.2s ease',
+    background: 'transparent',
+    border: 'none',
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
   },
   bcActive: {
     color: 'var(--accent-cyan)',
     fontWeight: 600,
     padding: '2px 6px',
     textShadow: '0 0 10px rgba(0, 242, 254, 0.2)',
+    background: 'transparent',
+    border: 'none',
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
   },
   searchBox: {
     display: 'flex',
