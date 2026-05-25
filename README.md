@@ -9,7 +9,7 @@
 [![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF.svg)](https://vite.dev/)
 [![React](https://img.shields.io/badge/Framework-React_19-61DAFB.svg)](https://react.dev/)
 
-**MacaqueTree (台灣獼猴)** 是一款向 **TreeSize** 與 **WinDirStat** 致敬的開源、跨平台、免安裝網頁版硬碟容量分析工具。它完全在您的瀏覽器本地沙盒執行，100% 保障資料隱私與安全，絕不上傳任何檔案！
+**MacaqueTree (台灣獼猴)** 是一款向 **TreeSize** 與 **WinDirStat** 致敬的開源、跨平台、免安裝網頁版硬碟容量分析工具。它完全在您的瀏覽器本地沙盒執行，保障資料隱私與安全，絕不上傳任何檔案！
 
 ---
 
