@@ -1,6 +1,6 @@
 import React from 'react';
 import { HardDrive, File, Folder, Activity, Info } from 'lucide-react';
-import { formatBytes } from '../utils/helpers';
+import { useSizeUnit } from '../hooks/useSizeUnit';
 
 interface StatsViewProps {
   totalSize: number;
@@ -19,27 +19,28 @@ export const StatsView: React.FC<StatsViewProps> = React.memo(({
   isScanning,
   scanSpeed
 }) => {
+  const { formatSize } = useSizeUnit();
   const avgFileSize = totalFiles > 0 ? totalSize / totalFiles : 0;
 
   return (
     <div style={styles.statsGrid}>
       {/* Total Scanned Card */}
       <div className="glass-panel" style={styles.card}>
-        <div style={styles.iconContainer('#00F2FE')}>
-          <HardDrive size={24} color="#00F2FE" />
+        <div style={styles.iconContainer('#8FAE93')}>
+          <HardDrive size={24} color="#8FAE93" />
         </div>
         <div style={styles.info}>
           <span style={styles.label}>總掃描空間</span>
           <span style={styles.value} className="text-gradient">
-            {formatBytes(totalSize)}
+            {formatSize(totalSize)}
           </span>
         </div>
       </div>
 
       {/* Total Files Card */}
       <div className="glass-panel" style={styles.card}>
-        <div style={styles.iconContainer('#4FACFE')}>
-          <File size={24} color="#4FACFE" />
+        <div style={styles.iconContainer('#8FAE93')}>
+          <File size={24} color="#8FAE93" />
         </div>
         <div style={styles.info}>
           <span style={styles.label}>檔案總數</span>
@@ -51,8 +52,8 @@ export const StatsView: React.FC<StatsViewProps> = React.memo(({
 
       {/* Total Folders Card */}
       <div className="glass-panel" style={styles.card}>
-        <div style={styles.iconContainer('#C572EF')}>
-          <Folder size={24} color="#C572EF" />
+        <div style={styles.iconContainer('#8FAE93')}>
+          <Folder size={24} color="#8FAE93" />
         </div>
         <div style={styles.info}>
           <span style={styles.label}>資料夾總數</span>
@@ -64,8 +65,8 @@ export const StatsView: React.FC<StatsViewProps> = React.memo(({
 
       {/* Scan Performance Card */}
       <div className="glass-panel" style={styles.card}>
-        <div style={styles.iconContainer(isScanning ? '#00E676' : '#FFB03A')}>
-          <Activity size={24} color={isScanning ? '#00E676' : '#FFB03A'} className={isScanning ? 'scan-glow' : ''} />
+        <div style={styles.iconContainer(isScanning ? '#8FAE93' : '#D4B07A')}>
+          <Activity size={24} color={isScanning ? '#8FAE93' : '#D4B07A'} className={isScanning ? 'scan-glow' : ''} />
         </div>
         <div style={styles.info}>
           <span style={styles.label}>{isScanning ? '掃描速度' : '掃描耗時'}</span>
@@ -85,12 +86,12 @@ export const StatsView: React.FC<StatsViewProps> = React.memo(({
 
       {/* Average File Size Card */}
       <div className="glass-panel" style={styles.card}>
-        <div style={styles.iconContainer('#FF4A6B')}>
-          <Info size={24} color="#FF4A6B" />
+        <div style={styles.iconContainer('#D4867A')}>
+          <Info size={24} color="#D4867A" />
         </div>
         <div style={styles.info}>
           <span style={styles.label}>平均檔案大小</span>
-          <span style={styles.value}>{formatBytes(avgFileSize)}</span>
+          <span style={styles.value}>{formatSize(avgFileSize)}</span>
         </div>
       </div>
     </div>

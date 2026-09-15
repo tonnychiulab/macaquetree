@@ -33,9 +33,23 @@
 - **WHEN** `showDirectoryPicker` 以 `AbortError` 結束
 - **THEN** 系統不顯示錯誤橫幅
 
-### Requirement: Version and metadata mismatch
-UI 標題徽章目前 SHALL 顯示 `Web v1.0`（不讀取 `package.json` 的 `1.0.1`）。`index.html` 的 author SHALL 為 `Antigravity Team`。README 宣稱 MIT，倉庫沒有 `LICENSE` 檔。`SECURITY.md` 仍是 GitHub 範本（列了 5.x/4.x 版本）。這些是文件／呈現現況，將由修正變更對齊。
+### Requirement: Version and metadata
+UI 標題徽章 SHALL 顯示 `package.json` 的 version（目前 `1.1.0`），不含 `Web v` 前綴。`index.html` 的 author SHALL 為維護者帳號。倉庫 SHALL 含 `LICENSE`（MIT）。
 
 #### Scenario: User reads the header badge
 - **WHEN** 應用程式渲染 header
-- **THEN** 徽章文字為 `Web v1.0`，不讀取 `package.json` 的 version 欄位
+- **THEN** 徽章文字等於建置時寫入的 `__APP_VERSION__`
+
+### Requirement: Single scan action on welcome
+歡迎狀態 SHALL 只顯示一顆選擇資料夾按鈕（英雄區），header 不再重複同一 CTA。
+
+#### Scenario: Fresh visit scan button
+- **WHEN** 頁面載入且尚未掃描
+- **THEN** 名稱為掃描動作標籤的 button 只有一個
+
+### Requirement: Large scan warning
+檔案數達到 `LARGE_SCAN_WARN_FILES`（50_000）時，掃描中與結果儀表板 SHALL 顯示 `role="status"` 記憶體警告。
+
+#### Scenario: Complete message reports a huge tree
+- **WHEN** Worker 完成且 `totalFiles` ≥ 50_000
+- **THEN** 畫面顯示建議改掃較小子資料夾的警告

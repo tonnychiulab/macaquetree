@@ -2,7 +2,8 @@ import React, { useState, useMemo, useDeferredValue } from 'react';
 import { Folder, File, ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, FolderUp } from 'lucide-react';
 import type { SerializedFileNode } from '../types';
 import { MAX_SEARCH_ROWS } from '../types';
-import { formatBytes, getRatioColorClass } from '../utils/helpers';
+import { getRatioColorClass } from '../utils/helpers';
+import { useSizeUnit } from '../hooks/useSizeUnit';
 import { collectSearchMatches, findNodeByPath, relativePathFrom, sortChildren } from '../utils/tree';
 
 interface TreeTableProps {
@@ -31,6 +32,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   onSelectNode,
   selectedNode
 }) => {
+  const { formatSize } = useSizeUnit();
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({
     [rootNode.path]: true
   });
@@ -311,7 +313,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     {/* Size and Percentage Column */}
                     <td role="gridcell">
                       <div style={styles.sizeCell}>
-                        <span style={styles.sizeText}>{formatBytes(node.size)}</span>
+                        <span style={styles.sizeText}>{formatSize(node.size)}</span>
                         <div style={styles.barWrapper}>
                           <div
                             className={`ratio-bar ${getRatioColorClass(ratioOfParent)}`}
@@ -413,10 +415,9 @@ const styles = {
     fontFamily: 'inherit',
   },
   bcActive: {
-    color: 'var(--accent-cyan)',
+    color: 'var(--accent)',
     fontWeight: 600,
     padding: '2px 6px',
-    textShadow: '0 0 10px rgba(0, 242, 254, 0.2)',
     background: 'transparent',
     border: 'none',
     fontSize: 'inherit',

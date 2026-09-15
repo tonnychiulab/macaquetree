@@ -8,6 +8,24 @@ import { scanDirectory } from './scanDirectory';
 
 export type PostMessage = (message: WorkerOutboundMessage) => void;
 
+export function isWorkerInboundMessage(data: unknown): data is WorkerInboundMessage {
+  if (!data || typeof data !== 'object') return false;
+  const type = (data as { type?: unknown }).type;
+  if (type === 'start') {
+    return 'directoryHandle' in data && (data as { directoryHandle?: unknown }).directoryHandle != null;
+  }
+  if (type === 'start-files') {
+    const msg = data as { files?: unknown; totalFiles?: unknown; batchIndex?: unknown; done?: unknown };
+    return (
+      Array.isArray(msg.files) &&
+      typeof msg.totalFiles === 'number' &&
+      typeof msg.batchIndex === 'number' &&
+      typeof msg.done === 'boolean'
+    );
+  }
+  return false;
+}
+
 export function createScanWorkerRuntime(post: PostMessage) {
   let fileBuffer: File[] = [];
   let lastReport = 0;

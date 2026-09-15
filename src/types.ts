@@ -1,6 +1,7 @@
 export const MAX_SCAN_DEPTH = 64;
 export const MAX_SEARCH_ROWS = 2000;
 export const FILE_BATCH_SIZE = 500;
+export const LARGE_SCAN_WARN_FILES = 50_000;
 
 export interface SerializedFileNode {
   name: string;

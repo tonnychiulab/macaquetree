@@ -15,6 +15,13 @@ describe('formatBytes', () => {
   it('formats tebibyte-scale values', () => {
     expect(formatBytes(1024 ** 4)).toBe('1 TB');
   });
+
+  it('can pin display to KB, MB, or GB', () => {
+    expect(formatBytes(1024, 2, 'KB')).toBe('1.00 KB');
+    expect(formatBytes(1024 ** 2, 2, 'MB')).toBe('1.00 MB');
+    expect(formatBytes(1024 ** 3, 2, 'GB')).toBe('1.00 GB');
+    expect(formatBytes(512, 2, 'MB')).toBe('0.00 MB');
+  });
 });
 
 describe('extension catalog', () => {
@@ -27,7 +34,7 @@ describe('extension catalog', () => {
 
   it('falls back to Other gray', () => {
     expect(getExtensionCategory('.zzz')).toBe('Other');
-    expect(getExtensionColor('.zzz')).toBe('#9E9E9E');
+    expect(getExtensionColor('.zzz')).toBe('#9AA39A');
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createScanWorkerRuntime } from './workerHandler';
+import { createScanWorkerRuntime, isWorkerInboundMessage } from './workerHandler';
 import { mockDirHandle, mockFile, mockFileHandle } from '../test/fixtures';
 import type { WorkerOutboundMessage } from '../types';
 
@@ -83,5 +83,17 @@ describe('createScanWorkerRuntime', () => {
       directoryHandle: null as never,
     });
     expect(messages.some((m) => m.type === 'error')).toBe(true);
+  });
+});
+
+describe('isWorkerInboundMessage', () => {
+  it('accepts start and start-files payloads and rejects noise', () => {
+    expect(isWorkerInboundMessage({ type: 'start', directoryHandle: {} })).toBe(true);
+    expect(
+      isWorkerInboundMessage({ type: 'start-files', files: [], totalFiles: 0, batchIndex: 0, done: true })
+    ).toBe(true);
+    expect(isWorkerInboundMessage(null)).toBe(false);
+    expect(isWorkerInboundMessage({ type: 'complete' })).toBe(false);
+    expect(isWorkerInboundMessage({ type: 'start' })).toBe(false);
   });
 });

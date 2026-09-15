@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { SerializedFileNode } from '../types';
-import { formatBytes, getExtensionColor, getExtensionCategory } from '../utils/helpers';
+import { getExtensionColor, getExtensionCategory } from '../utils/helpers';
+import { useSizeUnit } from '../hooks/useSizeUnit';
 import { findNodeByPath } from '../utils/tree';
 
 interface TreemapViewProps {
@@ -32,6 +33,7 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
   selectedNode,
   onSelectNode
 }) => {
+  const { formatSize } = useSizeUnit();
   const [hoveredRect, setHoveredRect] = useState<TreemapRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const layoutRoot = useMemo(
@@ -67,7 +69,7 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
           y,
           width: w,
           height: h,
-          color: node.kind === 'directory' ? 'rgba(79, 172, 254, 0.15)' : getExtensionColor(ext),
+          color: node.kind === 'directory' ? 'rgba(90, 122, 96, 0.55)' : getExtensionColor(ext),
           node
         });
         return;
@@ -122,15 +124,15 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
 
   // Categories Legend
   const legendItems = [
-    { name: '影片 (Video)', color: '#FF5722' },
-    { name: '音訊 (Audio)', color: '#E91E63' },
-    { name: '壓縮檔 (Archive)', color: '#FFEB3B' },
-    { name: '圖片 (Image)', color: '#4CAF50' },
-    { name: '文件 (Document)', color: '#2196F3' },
-    { name: '系統執行檔 (System)', color: '#F44336' },
-    { name: '開發程式碼 (Code)', color: '#00BCD4' },
-    { name: '資料夾 (Folder)', color: 'rgba(79, 172, 254, 0.4)' },
-    { name: '其他 (Other)', color: '#9E9E9E' }
+    { name: '影片 (Video)', color: '#D4785A' },
+    { name: '音訊 (Audio)', color: '#C47A9A' },
+    { name: '壓縮檔 (Archive)', color: '#C9B56A' },
+    { name: '圖片 (Image)', color: '#7A9E72' },
+    { name: '文件 (Document)', color: '#7A9BB8' },
+    { name: '系統執行檔 (System)', color: '#C46B62' },
+    { name: '開發程式碼 (Code)', color: '#6A9E9A' },
+    { name: '資料夾 (Folder)', color: 'rgba(90, 122, 96, 0.85)' },
+    { name: '其他 (Other)', color: '#9AA39A' }
   ];
 
   return (
@@ -229,7 +231,7 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
                       userSelect: 'none'
                     }}
                   >
-                    {formatBytes(r.size)}
+                    {formatSize(r.size)}
                   </text>
                 )}
               </g>
@@ -260,7 +262,7 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
                 <div style={styles.tooltipRow}>
                   <span>大小:</span>
                   <span style={styles.tooltipValue} className="text-gradient">
-                    {formatBytes(hoveredRect.size)}
+                    {formatSize(hoveredRect.size)}
                   </span>
                 </div>
                 <div style={styles.tooltipRow}>
