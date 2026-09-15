@@ -9,6 +9,8 @@
 [![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF.svg)](https://vite.dev/)
 [![React](https://img.shields.io/badge/Framework-React_19-61DAFB.svg)](https://react.dev/)
 
+**[線上體驗](https://macaquetree.tw365ai.workers.dev)** — 免安裝，用瀏覽器開啟即可掃描本機資料夾。掃描結果留在目前分頁，不會上傳。
+
 **MacaqueTree (台灣獼猴)** 是獨立的開源、免安裝本機磁碟空間分析工具，與其他商業或開源磁碟分析軟體沒有官方關係。它在您的瀏覽器分頁內讀取目錄中繼資料，應用程式沒有把檔案內容或掃描結果送到自有後端的邏輯。開啟網頁本身仍會向靜態託管下載 HTML/JS。約 5 萬檔以上會顯示記憶體警告。正式建置會加上 Content-Security-Policy；`npm run dev` 不加，以免打斷 Vite HMR。
 
 ---
@@ -43,6 +45,8 @@
 ---
 
 ## 🚀 快速開始 (Quick Start)
+
+想先試用不必克隆：打開 [線上體驗](https://macaquetree.tw365ai.workers.dev)。
 
 ### 1. 克隆專案 (Clone the Repository)
 ```bash
