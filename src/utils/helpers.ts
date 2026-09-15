@@ -1,8 +1,91 @@
-// Utility functions for MacaqueTree
+export type FileCategory =
+  | 'Video'
+  | 'Audio'
+  | 'Archive'
+  | 'Image'
+  | 'Document'
+  | 'System/Executable'
+  | 'Code/Dev'
+  | 'Other';
 
-/**
- * Format bytes to a human-readable string (e.g., 10.24 GB)
- */
+interface ExtensionMeta {
+  category: FileCategory;
+  color: string;
+}
+
+const CATEGORY_COLOR: Record<FileCategory, string> = {
+  Video: '#FF5722',
+  Audio: '#E91E63',
+  Archive: '#FFEB3B',
+  Image: '#4CAF50',
+  Document: '#2196F3',
+  'System/Executable': '#F44336',
+  'Code/Dev': '#00BCD4',
+  Other: '#9E9E9E',
+};
+
+const EXTENSION_META: Record<string, ExtensionMeta> = {
+  '.mp4': { category: 'Video', color: '#FF5722' },
+  '.mkv': { category: 'Video', color: '#FF5722' },
+  '.avi': { category: 'Video', color: '#FF5722' },
+  '.mov': { category: 'Video', color: '#FF7043' },
+  '.wmv': { category: 'Video', color: '#FF8A65' },
+  '.flv': { category: 'Video', color: '#FF5722' },
+  '.webm': { category: 'Video', color: '#FF5722' },
+  '.mp3': { category: 'Audio', color: '#E91E63' },
+  '.wav': { category: 'Audio', color: '#E91E63' },
+  '.flac': { category: 'Audio', color: '#EC407A' },
+  '.ogg': { category: 'Audio', color: '#F48FB1' },
+  '.m4a': { category: 'Audio', color: '#E91E63' },
+  '.aac': { category: 'Audio', color: '#E91E63' },
+  '.zip': { category: 'Archive', color: '#FFEB3B' },
+  '.rar': { category: 'Archive', color: '#FFEB3B' },
+  '.7z': { category: 'Archive', color: '#FBC02D' },
+  '.tar': { category: 'Archive', color: '#FDD835' },
+  '.gz': { category: 'Archive', color: '#FFEE58' },
+  '.bz2': { category: 'Archive', color: '#FBC02D' },
+  '.iso': { category: 'Archive', color: '#FFEB3B' },
+  '.png': { category: 'Image', color: '#4CAF50' },
+  '.jpg': { category: 'Image', color: '#4CAF50' },
+  '.jpeg': { category: 'Image', color: '#4CAF50' },
+  '.gif': { category: 'Image', color: '#66BB6A' },
+  '.svg': { category: 'Image', color: '#81C784' },
+  '.webp': { category: 'Image', color: '#A5D6A7' },
+  '.ico': { category: 'Image', color: '#4CAF50' },
+  '.tiff': { category: 'Image', color: '#4CAF50' },
+  '.bmp': { category: 'Image', color: '#4CAF50' },
+  '.pdf': { category: 'Document', color: '#2196F3' },
+  '.docx': { category: 'Document', color: '#2196F3' },
+  '.doc': { category: 'Document', color: '#1E88E5' },
+  '.xlsx': { category: 'Document', color: '#42A5F5' },
+  '.xls': { category: 'Document', color: '#2196F3' },
+  '.pptx': { category: 'Document', color: '#90CAF9' },
+  '.ppt': { category: 'Document', color: '#2196F3' },
+  '.txt': { category: 'Document', color: '#BBDEFB' },
+  '.md': { category: 'Document', color: '#BBDEFB' },
+  '.rtf': { category: 'Document', color: '#2196F3' },
+  '.exe': { category: 'System/Executable', color: '#F44336' },
+  '.msi': { category: 'System/Executable', color: '#F44336' },
+  '.dmg': { category: 'System/Executable', color: '#EF5350' },
+  '.pkg': { category: 'System/Executable', color: '#F44336' },
+  '.sh': { category: 'System/Executable', color: '#E57373' },
+  '.bat': { category: 'System/Executable', color: '#EF9A9A' },
+  '.cmd': { category: 'System/Executable', color: '#F44336' },
+  '.js': { category: 'Code/Dev', color: '#00BCD4' },
+  '.ts': { category: 'Code/Dev', color: '#00BCD4' },
+  '.tsx': { category: 'Code/Dev', color: '#00ACC1' },
+  '.jsx': { category: 'Code/Dev', color: '#26C6DA' },
+  '.html': { category: 'Code/Dev', color: '#80DEEA' },
+  '.css': { category: 'Code/Dev', color: '#4DD0E1' },
+  '.json': { category: 'Code/Dev', color: '#006064' },
+  '.py': { category: 'Code/Dev', color: '#00BCD4' },
+  '.cpp': { category: 'Code/Dev', color: '#00BCD4' },
+  '.h': { category: 'Code/Dev', color: '#00BCD4' },
+  '.java': { category: 'Code/Dev', color: '#00BCD4' },
+  '.go': { category: 'Code/Dev', color: '#00BCD4' },
+  '.rs': { category: 'Code/Dev', color: '#00BCD4' },
+};
+
 export function formatBytes(bytes: number, decimals: number = 2): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
   if (bytes === 0) return '0 B';
@@ -10,55 +93,26 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  // Keep index within bounds
   const idx = Math.min(i, sizes.length - 1);
   return parseFloat((bytes / Math.pow(k, idx)).toFixed(dm)) + ' ' + sizes[idx];
 }
 
-/**
- * Determine severity color class based on the ratio of parent size
- */
 export function getRatioColorClass(ratio: number): 'critical' | 'warning' | 'safe' {
-  if (ratio >= 0.5) return 'critical'; // More than 50%
-  if (ratio >= 0.15) return 'warning'; // 15% - 50%
-  return 'safe'; // Under 15%
+  if (ratio >= 0.5) return 'critical';
+  if (ratio >= 0.15) return 'warning';
+  return 'safe';
 }
 
-/**
- * Standard colors for D3 Treemap and Charts based on extension type
- */
+export function getExtensionCategory(ext: string): FileCategory {
+  return EXTENSION_META[ext.toLowerCase()]?.category ?? 'Other';
+}
+
 export function getExtensionColor(ext: string): string {
-  const extensionMap: { [key: string]: string } = {
-    // Videos (Orange-Red)
-    '.mp4': '#FF5722', '.mkv': '#FF5722', '.avi': '#FF5722', '.mov': '#FF7043', '.wmv': '#FF8A65',
-    // Audio (Pink)
-    '.mp3': '#E91E63', '.wav': '#E91E63', '.flac': '#EC407A', '.ogg': '#F48FB1',
-    // Archives/Compressed (Yellow)
-    '.zip': '#FFEB3B', '.rar': '#FFEB3B', '.7z': '#FBC02D', '.tar': '#FDD835', '.gz': '#FFEE58',
-    // Images (Green)
-    '.png': '#4CAF50', '.jpg': '#4CAF50', '.jpeg': '#4CAF50', '.gif': '#66BB6A', '.svg': '#81C784', '.webp': '#A5D6A7',
-    // Documents (Blue)
-    '.pdf': '#2196F3', '.docx': '#2196F3', '.doc': '#1E88E5', '.xlsx': '#42A5F5', '.pptx': '#90CAF9', '.txt': '#BBDEFB',
-    // Executables/System (Red)
-    '.exe': '#F44336', '.msi': '#F44336', '.dmg': '#EF5350', '.sh': '#E57373', '.bat': '#EF9A9A',
-    // Development/Code (Teal)
-    '.js': '#00BCD4', '.ts': '#00BCD4', '.tsx': '#00ACC1', '.jsx': '#26C6DA', '.html': '#80DEEA', '.css': '#4DD0E1', '.json': '#006064'
-  };
-
-  return extensionMap[ext.toLowerCase()] || '#9E9E9E'; // Gray fallback
+  const meta = EXTENSION_META[ext.toLowerCase()];
+  if (meta) return meta.color;
+  return CATEGORY_COLOR[getExtensionCategory(ext)];
 }
 
-/**
- * Get display category name for file extension
- */
-export function getExtensionCategory(ext: string): string {
-  const extension = ext.toLowerCase();
-  if (['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'].includes(extension)) return 'Video';
-  if (['.mp3', '.wav', '.flac', '.ogg', '.m4a', '.aac'].includes(extension)) return 'Audio';
-  if (['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.iso'].includes(extension)) return 'Archive';
-  if (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.tiff', '.bmp'].includes(extension)) return 'Image';
-  if (['.pdf', '.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt', '.txt', '.md', '.rtf'].includes(extension)) return 'Document';
-  if (['.exe', '.msi', '.dmg', '.pkg', '.sh', '.bat', '.cmd'].includes(extension)) return 'System/Executable';
-  if (['.js', '.ts', '.tsx', '.jsx', '.html', '.css', '.json', '.py', '.cpp', '.h', '.java', '.go', '.rs'].includes(extension)) return 'Code/Dev';
-  return 'Other';
+export function fileExtension(fileName: string): string {
+  return fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')).toLowerCase() : '';
 }

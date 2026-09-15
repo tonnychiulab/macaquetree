@@ -1,9 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { StatsView } from './components/StatsView';
 import { TreeTable } from './components/TreeTable';
 import { TreemapView } from './components/TreemapView';
 import { ChartsView } from './components/ChartsView';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import type { SerializedFileNode } from './types';
 import { 
   FolderSearch, 
@@ -19,304 +18,40 @@ import {
   X
 } from 'lucide-react';
 import { formatBytes } from './utils/helpers';
+import { isFileSystemAccessSupported, useDirectoryScan } from './hooks/useDirectoryScan';
 
 type TabType = 'tree' | 'treemap' | 'charts';
 
 function App() {
-  const [isScanning, setIsScanning] = useState(false);
-  const [rootNode, setRootNode] = useState<SerializedFileNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SerializedFileNode | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('tree');
-  
-  // Scanned Stats
-  const [totalFiles, setTotalFiles] = useState(0);
-  const [totalFolders, setTotalFolders] = useState(0);
-  const [totalSize, setTotalSize] = useState(0);
-  const [scanTime, setScanTime] = useState(0);
-  const [currentScanningPath, setCurrentScanningPath] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const isApiSupported = isFileSystemAccessSupported();
+  const scan = useDirectoryScan();
+  const {
+    isScanning,
+    rootNode,
+    focusedPath,
+    setFocusedPath,
+    totalFiles,
+    totalFolders,
+    totalSize,
+    scanTime,
+    currentScanningPath,
+    error,
+    setError,
+    scanSpeed,
+    skippedCount,
+    processed,
+    knownTotal,
+    fileInputRef,
+    startFileSystemScan,
+    startFallbackScan,
+    cancelScan,
+    reset,
+  } = scan;
 
-  // Speed Calculations
-  const [scanSpeed, setScanSpeed] = useState(0);
-
-  const scannedCountRef = useRef(0);
-  const abortRef = useRef<AbortController | null>(null);
-
-  const workerRef = useRef<Worker | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Verify File System Access API support
-  const isApiSupported = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
-
-  // Scan speed ticker
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isScanning) {
-      let lastCount = 0;
-      interval = setInterval(() => {
-        const currentCount = scannedCountRef.current;
-        const delta = currentCount - lastCount;
-        setScanSpeed(delta * 2); // 500ms interval = x2 for per second rate
-        lastCount = currentCount;
-      }, 500);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isScanning]);
-
-  // Clean up worker on unmount
-  useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-      }
-    };
-  }, []);
-
-  // Launch File System Access API scanning
-  const handleStartScan = async () => {
-    try {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-      }
-
-      // Request directory handle from user
-      const directoryHandle = await (window as any).showDirectoryPicker({
-        mode: 'read'
-      });
-
-      setIsScanning(true);
-      setError(null);
-      setRootNode(null);
-      setSelectedNode(null);
-      setTotalFiles(0);
-      setTotalFolders(0);
-      setTotalSize(0);
-      setScanSpeed(0);
-      scannedCountRef.current = 0;
-      setCurrentScanningPath('取得授權，啟動掃描執行緒...');
-
-      // Spawn Vite-compatible Web Worker
-      const worker = new Worker(new URL('./workers/scan.worker.ts', import.meta.url), {
-        type: 'module'
-      });
-      workerRef.current = worker;
-
-      worker.onmessage = (e: MessageEvent) => {
-        const { type, totalFiles, totalFolders, totalSize, currentPath, rootNode, executionTime, error: workerErr } = e.data;
-
-        if (type === 'progress') {
-          setTotalFiles(totalFiles);
-          setTotalFolders(totalFolders);
-          setTotalSize(totalSize);
-          setCurrentScanningPath(currentPath);
-          scannedCountRef.current = totalFiles + totalFolders;
-        } else if (type === 'complete') {
-          setRootNode(rootNode);
-          setTotalFiles(totalFiles);
-          setTotalFolders(totalFolders);
-          setTotalSize(totalSize);
-          setScanTime(executionTime);
-          setIsScanning(false);
-          worker.terminate();
-          workerRef.current = null;
-        } else if (type === 'error') {
-          setError(workerErr);
-          setIsScanning(false);
-          worker.terminate();
-          workerRef.current = null;
-        }
-      };
-
-      worker.onerror = (event) => {
-        setError(`掃描引擎載入失敗: ${event.message}`);
-        setIsScanning(false);
-        worker.terminate();
-        workerRef.current = null;
-      };
-
-      // Send start message to worker
-      worker.postMessage({ type: 'start', directoryHandle });
-
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        setError(err.message || '掃描資料夾失敗，請確定瀏覽器已取得目錄存取權限。');
-      }
-      setIsScanning(false);
-    }
-  };
-
-  // Fallback scanner for browsers without File System Access API (webkitdirectory)
-  const handleFallbackScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    abortRef.current = new AbortController();
-
-    setIsScanning(true);
-    setError(null);
-    setRootNode(null);
-    setSelectedNode(null);
-    setTotalFiles(0);
-    setTotalFolders(0);
-    setTotalSize(0);
-    setScanSpeed(0);
-    scannedCountRef.current = 0;
-    
-    const startTime = Date.now();
-    let tempFiles = 0;
-    let tempSize = 0;
-
-    // Helper map to build folder hierarchy
-    const rootPathName = files[0].webkitRelativePath.split('/')[0] || 'Selected Folder';
-    const root: SerializedFileNode = {
-      name: rootPathName,
-      path: rootPathName,
-      kind: 'directory',
-      size: 0,
-      fileCount: 0,
-      folderCount: 0,
-      depth: 0,
-      children: []
-    };
-
-    setCurrentScanningPath('正在讀取上傳的目錄結構...');
-
-    // Process files locally
-    try {
-      const folderMap = new Map<string, SerializedFileNode>();
-      folderMap.set(root.path, root);
-
-      const processFile = (file: File) => {
-        const pathParts = file.webkitRelativePath.split('/');
-        const folderPath = pathParts.slice(0, -1).join('/');
-        
-        // Ensure folder path exists
-        if (!folderMap.has(folderPath)) {
-          let currentPath = root.path;
-          for (let j = 1; j < pathParts.length - 1; j++) {
-            const part = pathParts[j];
-            const nextPath = `${currentPath}/${part}`;
-            if (!folderMap.has(nextPath)) {
-              const newFolder: SerializedFileNode = {
-                name: part,
-                path: nextPath,
-                kind: 'directory',
-                size: 0,
-                fileCount: 0,
-                folderCount: 0,
-                depth: j,
-                children: []
-              };
-              folderMap.set(nextPath, newFolder);
-              folderMap.get(currentPath)!.children!.push(newFolder);
-              root.folderCount++;
-            }
-            currentPath = nextPath;
-          }
-        }
-
-        const parentFolder = folderMap.get(folderPath)!;
-        const ext = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')).toLowerCase() : '';
-        const fileNode: SerializedFileNode = {
-          name: file.name,
-          path: `${parentFolder.path}/${file.name}`,
-          kind: 'file',
-          size: file.size,
-          fileCount: 1,
-          folderCount: 0,
-          depth: parentFolder.depth + 1,
-          extension: ext,
-          lastModified: file.lastModified
-        };
-
-        parentFolder.children!.push(fileNode);
-        
-        let currentBubblePath: string | null = folderPath;
-        while (currentBubblePath && currentBubblePath.length >= root.path.length) {
-          const nodeToUpdate = folderMap.get(currentBubblePath);
-          if (nodeToUpdate) {
-            nodeToUpdate.size += file.size;
-            nodeToUpdate.fileCount++;
-          }
-          const lastSlashIdx = currentBubblePath.lastIndexOf('/');
-          currentBubblePath = lastSlashIdx > 0 ? currentBubblePath.substring(0, lastSlashIdx) : null;
-        }
-        
-        tempFiles++;
-        tempSize += file.size;
-      };
-
-      let lastYieldTime = performance.now();
-      for (let i = 0; i < files.length; i++) {
-        if (abortRef.current?.signal.aborted) {
-          throw new Error('AbortError');
-        }
-
-        processFile(files[i]);
-        
-        if (performance.now() - lastYieldTime > 16) {
-          setTotalFiles(tempFiles);
-          setTotalFolders(root.folderCount);
-          setTotalSize(tempSize);
-          scannedCountRef.current = tempFiles + root.folderCount;
-          setCurrentScanningPath(files[i].webkitRelativePath);
-          await new Promise(r => setTimeout(r, 0));
-          lastYieldTime = performance.now();
-        }
-      }
-
-      // Sort children by size recursively
-      const sortTree = (node: SerializedFileNode) => {
-        if (node.children) {
-          node.children.sort((a, b) => b.size - a.size);
-          node.children.forEach(sortTree);
-        }
-      };
-      
-      sortTree(root);
-
-      setRootNode(root);
-      setTotalFiles(tempFiles);
-      setTotalFolders(root.folderCount);
-      setTotalSize(tempSize);
-      setScanTime(Date.now() - startTime);
-      setIsScanning(false);
-
-    } catch (err: any) {
-      if (err.message !== 'AbortError') {
-        setError(err.message || '分析目錄失敗。');
-      }
-      setIsScanning(false);
-    }
-  };
-
-  const handleCancelScan = () => {
-    if (workerRef.current) {
-      workerRef.current.terminate();
-      workerRef.current = null;
-    }
-    if (abortRef.current) {
-      abortRef.current.abort();
-      abortRef.current = null;
-    }
-    setIsScanning(false);
-    setCurrentScanningPath('掃描已被使用者取消。');
-  };
-
-  const handleReset = () => {
-    setRootNode(null);
-    setSelectedNode(null);
-    setTotalFiles(0);
-    setTotalFolders(0);
-    setTotalSize(0);
-    setScanTime(0);
-    setScanSpeed(0);
-    setError(null);
-    scannedCountRef.current = 0;
-    setCurrentScanningPath('');
-  };
+  const progressPercent =
+    knownTotal && knownTotal > 0 ? Math.min(100, (processed / knownTotal) * 100) : null;
 
   return (
     <div style={styles.appContainer}>
@@ -328,7 +63,7 @@ function App() {
           </div>
           <div>
             <h1 style={styles.logoText}>
-              MacaqueTree <span style={styles.badge}>Web v1.0</span>
+              MacaqueTree <span style={styles.badge}>Web v{__APP_VERSION__}</span>
             </h1>
             <p style={styles.logoSub}>免安裝、跨平台、極速本機磁碟容量分析器</p>
           </div>
@@ -336,13 +71,13 @@ function App() {
 
         <div style={styles.controlsSection}>
           {isScanning ? (
-            <button onClick={handleCancelScan} className="glow-btn" style={{ ...styles.scanBtn, background: 'var(--color-critical)', boxShadow: '0 0 15px rgba(255, 74, 107, 0.3)' }}>
+            <button onClick={cancelScan} className="glow-btn" style={{ ...styles.scanBtn, background: 'var(--color-critical)', boxShadow: '0 0 15px rgba(255, 74, 107, 0.3)' }}>
               <X size={16} color="#FFF" />
               停止掃描
             </button>
           ) : rootNode ? (
             <div style={styles.buttonGroup}>
-              <button onClick={handleReset} className="secondary-btn">
+              <button onClick={() => { setSelectedNode(null); reset(); }} className="secondary-btn">
                 <RefreshCw size={16} />
                 重新掃描
               </button>
@@ -350,7 +85,7 @@ function App() {
           ) : (
             <>
               {isApiSupported ? (
-                <button onClick={handleStartScan} className="glow-btn" style={styles.scanBtn}>
+                <button onClick={startFileSystemScan} className="glow-btn" style={styles.scanBtn}>
                   <FolderOpen size={16} />
                   選擇資料夾並掃描
                 </button>
@@ -363,11 +98,9 @@ function App() {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    {...({
-                      webkitdirectory: "true",
-                      directory: ""
-                    } as any)}
-                    onChange={handleFallbackScan}
+                    webkitdirectory=""
+                    directory=""
+                    onChange={(e) => { void startFallbackScan(e.target.files); }}
                     onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
                     style={{ display: 'none' }}
                   />
@@ -421,10 +154,21 @@ function App() {
 
             {/* Glowing progress line */}
             <div className="progress-container" style={{ margin: '16px 0' }}>
-              <div className="progress-bar" style={{ width: '100%' }}>
+              <div
+                className={`progress-bar${progressPercent == null ? ' indeterminate' : ''}`}
+                style={progressPercent == null ? undefined : { width: `${progressPercent}%` }}
+              >
                 <div className="progress-glow-bar" />
               </div>
             </div>
+            {progressPercent != null && (
+              <div style={styles.scanningPath}>
+                進度: {processed.toLocaleString()} / {knownTotal?.toLocaleString()}
+              </div>
+            )}
+            {skippedCount > 0 && (
+              <div style={styles.scanningPath}>已略過無法讀取的項目: {skippedCount.toLocaleString()}</div>
+            )}
 
             <div style={styles.scanningPath} title={currentScanningPath}>
               <strong>掃描中:</strong> {currentScanningPath || '建立檔案索引中...'}
@@ -461,7 +205,7 @@ function App() {
               {/* Launch Action */}
               <div style={styles.actionCenter}>
                 {isApiSupported ? (
-                  <button onClick={handleStartScan} className="glow-btn" style={styles.hugeBtn}>
+                  <button onClick={startFileSystemScan} className="glow-btn" style={styles.hugeBtn}>
                     <FolderOpen size={20} />
                     立刻選擇資料夾並掃描
                   </button>
@@ -475,7 +219,7 @@ function App() {
                 )}
                 <span style={styles.securityHint}>
                   <ShieldCheck size={14} color="var(--color-safe)" />
-                  本程式設計為純本地端執行不含上傳邏輯，但環境安全仍受瀏覽器與託管平台影響，建議自行審查原始碼
+                  目錄中繼資料只在這個瀏覽器分頁處理，應用程式沒有上傳檔案或掃描結果的邏輯。開啟本頁仍會向託管靜態網站的主機下載 HTML/JS。
                 </span>
               </div>
             </div>
@@ -506,8 +250,11 @@ function App() {
         {/* Dashboard Analytics View */}
         {rootNode && (
           <div style={styles.dashboard}>
-            <ErrorBoundary>
-            {/* Stats Cards */}
+            {skippedCount > 0 && (
+              <div className="glass-panel" style={styles.errorBanner} role="status">
+                掃描時略過 {skippedCount.toLocaleString()} 個無法讀取的項目，容量可能被低估。
+              </div>
+            )}
             <StatsView
               totalSize={totalSize}
               totalFiles={totalFiles}
@@ -564,7 +311,10 @@ function App() {
             <div style={styles.tabContent}>
               {activeTab === 'tree' && (
                 <TreeTable
+                  key={rootNode.path}
                   rootNode={rootNode}
+                  focusedPath={focusedPath}
+                  onFocusPath={setFocusedPath}
                   selectedNode={selectedNode}
                   onSelectNode={setSelectedNode}
                 />
@@ -573,6 +323,8 @@ function App() {
               {activeTab === 'treemap' && (
                 <TreemapView
                   rootNode={rootNode}
+                  focusedPath={focusedPath}
+                  onFocusPath={setFocusedPath}
                   selectedNode={selectedNode}
                   onSelectNode={setSelectedNode}
                 />
@@ -582,7 +334,6 @@ function App() {
                 <ChartsView rootNode={rootNode} />
               )}
             </div>
-            </ErrorBoundary>
           </div>
         )}
       </main>
@@ -706,7 +457,7 @@ const styles = {
     alignItems: 'stretch',
     gap: '20px',
     marginBottom: '24px',
-    borderStyle: 'dashed' as any,
+    borderStyle: 'dashed',
     borderColor: 'var(--accent-cyan)',
     animation: 'pulse-glow 2s infinite alternate',
   },

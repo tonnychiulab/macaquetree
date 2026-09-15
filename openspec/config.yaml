@@ -1,0 +1,34 @@
+schema: spec-driven
+
+context: |
+  Language: zh
+  All artifacts must be written in zh.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Project: MacaqueTree (台灣獼猴) — 瀏覽器內執行的本機磁碟容量分析 SPA。
+  Stack: React 19 + TypeScript + Vite 8；掃描走 File System Access API Web Worker，不支援時 fallback 到 webkitdirectory。
+  Trust model: 無後端、無帳號、無上傳 API。唯一信任邊界是使用者授權的本機目錄與檔名顯示。
+  Do not add a server, cloud sync, or file-content upload. Keep scans local to the browser sandbox.
+  Comparable products: TreeSize, WinDirStat. This app is more sandboxed (browser permission prompt) but weaker on large-tree performance and native FS coverage.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

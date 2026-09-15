@@ -1,10 +1,14 @@
 import React, { useState, useMemo, useDeferredValue } from 'react';
 import { Folder, File, ChevronRight, ChevronDown, Search, ArrowUp, ArrowDown, FolderUp } from 'lucide-react';
 import type { SerializedFileNode } from '../types';
+import { MAX_SEARCH_ROWS } from '../types';
 import { formatBytes, getRatioColorClass } from '../utils/helpers';
+import { collectSearchMatches, findNodeByPath, relativePathFrom, sortChildren } from '../utils/tree';
 
 interface TreeTableProps {
   rootNode: SerializedFileNode;
+  focusedPath: string;
+  onFocusPath: (path: string) => void;
   onSelectNode?: (node: SerializedFileNode) => void;
   selectedNode: SerializedFileNode | null;
 }
@@ -22,52 +26,23 @@ const dateFormatter = new Intl.DateTimeFormat('zh-TW', {
 
 export const TreeTable: React.FC<TreeTableProps> = ({
   rootNode,
+  focusedPath,
+  onFocusPath,
   onSelectNode,
   selectedNode
 }) => {
-  // Breadcrumb navigation state
-  const [currentRootPath, setCurrentRootPath] = useState<string>('');
-  // Expanded directories path map
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({
-    [rootNode.path]: true // Expand root by default
+    [rootNode.path]: true
   });
-  // Search query
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  // Sorting state
   const [sortField, setSortField] = useState<SortField>('size');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  // Reset state when rootNode changes
-  React.useEffect(() => {
-    setExpandedPaths({ [rootNode.path]: true });
-    setCurrentRootPath('');
-    setSearchQuery('');
-  }, [rootNode.path]);
-
-  // Find the sub-node that matches the current breadcrumb root path
-  const activeRootNode = useMemo(() => {
-    if (!currentRootPath || currentRootPath === rootNode.path) return rootNode;
-
-    const relPath = currentRootPath.startsWith(rootNode.path) 
-      ? currentRootPath.substring(rootNode.path.length) 
-      : currentRootPath;
-      
-    const parts = relPath.split('/').filter(Boolean);
-    let current: SerializedFileNode = rootNode;
-
-    for (const part of parts) {
-      if (current.children) {
-        const found = current.children.find(child => child.name === part && child.kind === 'directory');
-        if (found) {
-          current = found;
-        } else {
-          break;
-        }
-      }
-    }
-    return current;
-  }, [rootNode, currentRootPath]);
+  const activeRootNode = useMemo(
+    () => findNodeByPath(rootNode, focusedPath) ?? rootNode,
+    [rootNode, focusedPath]
+  );
 
   // Toggle expand / collapse path
   const toggleExpand = (path: string, e: React.MouseEvent) => {
@@ -81,8 +56,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   // Double click a directory to drill down
   const handleDoubleClick = (node: SerializedFileNode) => {
     if (node.kind === 'directory') {
-      setCurrentRootPath(node.path);
-      // Auto-expand the newly focused folder
+      onFocusPath(node.path);
       setExpandedPaths(prev => ({
         ...prev,
         [node.path]: true
@@ -90,19 +64,17 @@ export const TreeTable: React.FC<TreeTableProps> = ({
     }
   };
 
-  // Breadcrumb navigation click
   const navigateToBreadcrumb = (path: string) => {
-    setCurrentRootPath(path);
+    onFocusPath(path);
   };
 
   // Generate breadcrumb items
   const breadcrumbs = useMemo(() => {
-    if (!currentRootPath) return [{ name: rootNode.name, path: rootNode.path }];
-    
-    const parts = currentRootPath.split('/');
+    const path = focusedPath || rootNode.path;
+    const parts = path.split('/');
     const items = [];
     let currentAcc = '';
-    
+
     for (let i = 0; i < parts.length; i++) {
       currentAcc = currentAcc ? `${currentAcc}/${parts[i]}` : parts[i];
       items.push({
@@ -111,7 +83,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
       });
     }
     return items;
-  }, [rootNode, currentRootPath]);
+  }, [rootNode.path, focusedPath]);
 
   // Handle header sorting click
   const handleSort = (field: SortField) => {
@@ -124,45 +96,37 @@ export const TreeTable: React.FC<TreeTableProps> = ({
   };
 
   // Build the flattened, sorted list of visible rows
-  const visibleRows = useMemo(() => {
-    const list: { node: SerializedFileNode; depth: number }[] = [];
+  const { visibleRows, searchTruncated } = useMemo(() => {
+    if (deferredSearchQuery.trim()) {
+      const { matches, truncated } = collectSearchMatches(
+        activeRootNode,
+        deferredSearchQuery,
+        MAX_SEARCH_ROWS
+      );
+      const sorted = sortChildren(
+        matches,
+        sortField,
+        sortOrder
+      );
+      return {
+        visibleRows: sorted.map((node) => ({ node, depth: 0, isSearchHit: true })),
+        searchTruncated: truncated,
+      };
+    }
+
+    const list: { node: SerializedFileNode; depth: number; isSearchHit: boolean }[] = [];
 
     const traverse = (node: SerializedFileNode, currentDepth: number) => {
-      // Don't render the active root node in the rows list itself (it is in breadcrumbs)
       const isCurrentRoot = node.path === activeRootNode.path;
-      
+
       if (!isCurrentRoot) {
-        // If searching, only include nodes matching search query
-        if (deferredSearchQuery) {
-          const match = node.name.toLowerCase().includes(deferredSearchQuery.toLowerCase());
-          if (match) {
-            list.push({ node, depth: currentDepth });
-          }
-        } else {
-          list.push({ node, depth: currentDepth });
-        }
+        list.push({ node, depth: currentDepth, isSearchHit: false });
       }
 
       const isExpanded = expandedPaths[node.path];
-      
-      // If node is expanded or we are searching (search expands everything), traverse children
-      if (node.children && (isExpanded || deferredSearchQuery || isCurrentRoot)) {
-        // Copy and sort children based on sorting parameters
-        const sortedChildren = [...node.children].sort((a, b) => {
-          let comparison = 0;
-          if (sortField === 'name') {
-            comparison = a.name.localeCompare(b.name);
-          } else if (sortField === 'size') {
-            comparison = a.size - b.size;
-          } else if (sortField === 'fileCount') {
-            comparison = a.fileCount - b.fileCount;
-          } else if (sortField === 'lastModified') {
-            comparison = (a.lastModified || 0) - (b.lastModified || 0);
-          }
 
-          return sortOrder === 'asc' ? comparison : -comparison;
-        });
-
+      if (node.children && (isExpanded || isCurrentRoot)) {
+        const sortedChildren = sortChildren(node.children, sortField, sortOrder);
         for (const child of sortedChildren) {
           traverse(child, isCurrentRoot ? 0 : currentDepth + 1);
         }
@@ -170,7 +134,7 @@ export const TreeTable: React.FC<TreeTableProps> = ({
     };
 
     traverse(activeRootNode, 0);
-    return list;
+    return { visibleRows: list, searchTruncated: false };
   }, [activeRootNode, expandedPaths, deferredSearchQuery, sortField, sortOrder]);
 
   return (
@@ -179,11 +143,11 @@ export const TreeTable: React.FC<TreeTableProps> = ({
       <div style={styles.actionBar}>
         {/* Breadcrumbs */}
         <div style={styles.breadcrumbContainer}>
-          {currentRootPath && currentRootPath !== rootNode.path && (
+          {focusedPath && focusedPath !== rootNode.path && (
             <button
               onClick={() => {
-                const idx = currentRootPath.lastIndexOf('/');
-                setCurrentRootPath(idx > 0 ? currentRootPath.substring(0, idx) : rootNode.path);
+                const idx = focusedPath.lastIndexOf('/');
+                onFocusPath(idx > 0 ? focusedPath.substring(0, idx) : rootNode.path);
               }}
               style={styles.upBtn}
               title="返回上一層"
@@ -288,11 +252,13 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                 </td>
               </tr>
             ) : (
-              visibleRows.map(({ node, depth }) => {
+              <>
+              {visibleRows.map(({ node, depth, isSearchHit }) => {
                 const ratioOfParent = activeRootNode.size > 0 ? node.size / activeRootNode.size : 0;
                 const ratioPercentage = (ratioOfParent * 100).toFixed(1);
                 const isSelected = selectedNode?.path === node.path;
                 const isExpanded = !!expandedPaths[node.path];
+                const pathHint = relativePathFrom(activeRootNode.path, node.path);
 
                 return (
                   <tr
@@ -303,17 +269,16 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     tabIndex={0}
                     role="row"
                     aria-level={depth + 1}
-                    aria-expanded={node.kind === 'directory' ? isExpanded : undefined}
+                    aria-expanded={!isSearchHit && node.kind === 'directory' ? isExpanded : undefined}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleDoubleClick(node);
-                      if (e.key === 'ArrowRight' && node.kind === 'directory' && !isExpanded) toggleExpand(node.path, e as unknown as React.MouseEvent);
-                      if (e.key === 'ArrowLeft' && node.kind === 'directory' && isExpanded) toggleExpand(node.path, e as unknown as React.MouseEvent);
+                      if (!isSearchHit && e.key === 'ArrowRight' && node.kind === 'directory' && !isExpanded) toggleExpand(node.path, e as unknown as React.MouseEvent);
+                      if (!isSearchHit && e.key === 'ArrowLeft' && node.kind === 'directory' && isExpanded) toggleExpand(node.path, e as unknown as React.MouseEvent);
                     }}
                   >
-                    {/* Name Column */}
                     <td role="gridcell">
                       <div style={{ ...styles.nameCell, paddingLeft: `${depth * 20}px` }}>
-                        {node.kind === 'directory' ? (
+                        {!isSearchHit && node.kind === 'directory' ? (
                           <button
                             onClick={(e) => toggleExpand(node.path, e)}
                             style={styles.expander}
@@ -336,9 +301,9 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                             fontWeight: node.kind === 'directory' ? 500 : 400,
                             color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)'
                           }}
-                          title={node.name}
+                          title={pathHint}
                         >
-                          {node.name}
+                          {isSearchHit ? pathHint : node.name}
                         </span>
                       </div>
                     </td>
@@ -374,7 +339,15 @@ export const TreeTable: React.FC<TreeTableProps> = ({
                     </td>
                   </tr>
                 );
-              })
+              })}
+              {searchTruncated && (
+                <tr>
+                  <td colSpan={4} style={styles.emptyCell}>
+                    搜尋結果已截斷為前 {MAX_SEARCH_ROWS.toLocaleString()} 筆。
+                  </td>
+                </tr>
+              )}
+              </>
             )}
           </tbody>
         </table>

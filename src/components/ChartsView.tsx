@@ -1,62 +1,16 @@
 import React, { useMemo } from 'react';
 import type { SerializedFileNode } from '../types';
-import { formatBytes, getExtensionColor, getExtensionCategory } from '../utils/helpers';
+import { formatBytes, getExtensionColor } from '../utils/helpers';
+import { aggregateFileStats } from '../utils/stats';
 
 interface ChartsViewProps {
   rootNode: SerializedFileNode;
 }
 
-interface ExtensionStat {
-  ext: string;
-  category: string;
-  size: number;
-  count: number;
-  color: string;
-}
-
 export const ChartsView: React.FC<ChartsViewProps> = ({ rootNode }) => {
   
   // Recursively gather all files and aggregate stats
-  const { extStats, largestFiles } = useMemo(() => {
-    const extMap: Record<string, { size: number; count: number }> = {};
-    const filesList: SerializedFileNode[] = [];
-
-    const traverse = (node: SerializedFileNode) => {
-      if (node.kind === 'file') {
-        filesList.push(node);
-        const ext = node.extension || '.unknown';
-        if (!extMap[ext]) {
-          extMap[ext] = { size: 0, count: 0 };
-        }
-        extMap[ext].size += node.size;
-        extMap[ext].count += 1;
-      } else if (node.children) {
-        for (const child of node.children) {
-          traverse(child);
-        }
-      }
-    };
-
-    traverse(rootNode);
-
-    // Convert map to sorted stats array
-    const extStats: ExtensionStat[] = Object.entries(extMap)
-      .map(([ext, data]) => ({
-        ext,
-        category: getExtensionCategory(ext),
-        size: data.size,
-        count: data.count,
-        color: getExtensionColor(ext),
-      }))
-      .sort((a, b) => b.size - a.size);
-
-    // Get top 10 largest files
-    const largestFiles = [...filesList]
-      .sort((a, b) => b.size - a.size)
-      .slice(0, 10);
-
-    return { extStats, largestFiles };
-  }, [rootNode]);
+  const { extStats, largestFiles } = useMemo(() => aggregateFileStats(rootNode), [rootNode]);
 
   // Compute ring chart angles for Top 6 categories, group the rest
   const ringSegments = useMemo(() => {

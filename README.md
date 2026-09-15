@@ -9,14 +9,14 @@
 [![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF.svg)](https://vite.dev/)
 [![React](https://img.shields.io/badge/Framework-React_19-61DAFB.svg)](https://react.dev/)
 
-**MacaqueTree (台灣獼猴)** 是一款向 **TreeSize** 與 **WinDirStat** 致敬的開源、跨平台、免安裝網頁版硬碟容量分析工具。它完全在您的瀏覽器本地沙盒執行，保障資料隱私與安全，絕不上傳任何檔案！
+**MacaqueTree (台灣獼猴)** 是一款向 **TreeSize** 與 **WinDirStat** 致敬的開源、跨平台、免安裝網頁版硬碟容量分析工具。它在您的瀏覽器分頁內讀取目錄中繼資料，應用程式沒有把檔案內容或掃描結果送到自有後端的邏輯。開啟網頁本身仍會向靜態託管下載 HTML/JS。
 
 ---
 
 ## 🌟 核心理念與台灣特色 (Core Concepts & Rationale)
 
 *   **🐒 獼猴的攀爬喻意**：本專案以台灣唯一的特有種猴類 —— **「台灣獼猴 (Formosan Rock Macaque)」** 命名。台灣獼猴以敏捷的身手在叢林樹木間穿梭嬉戲；而我們的分析器就如同獼猴一般，在極短時間內遍歷、攀爬您指定的「目錄樹 (Directory Tree)」，找出隱藏在深處的大檔案。
-*   **🗽 自由與安全精神**：台灣象徵著民主與高度的自由開放。本專案秉持開源的自由精神，提供使用者一個安全、透明的工具，**目標朝著 100% 本地運算，降低雲端隱憂**。
+*   **🗽 自由與安全精神**：台灣象徵著民主與高度的自由開放。本專案秉持開源的自由精神，提供使用者一個安全、透明的工具。掃描結果留在目前分頁的記憶體中；本站是靜態前端，仍會下載網頁資產，但不會把目錄樹 POST 到應用程式後端。
 
 ---
 
@@ -45,8 +45,8 @@
 
 ### 1. 克隆專案 (Clone the Repository)
 ```bash
-git clone https://github.com/yourusername/MacaqueTree.git
-cd MacaqueTree
+git clone https://github.com/tonnychiulab/macaquetree.git
+cd macaquetree
 ```
 
 ### 2. 安裝依賴 (Install Dependencies)

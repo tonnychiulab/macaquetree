@@ -2,20 +2,14 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Only the latest published `main` branch of MacaqueTree (currently 1.x) receives security fixes. There is no separate 4.x / 5.x line.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## What this project is
+
+MacaqueTree is a static, browser-only SPA. It has no application server, accounts, or API. Directory metadata is read in the current tab after the user grants access with File System Access API or a `webkitdirectory` picker.
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+Please open a GitHub issue at https://github.com/tonnychiulab/macaquetree/issues with a reproduction and impact. Do not attach live copies of other people's files.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+You should hear back within 14 days. If the report is accepted, a fix will ship on `main` and this policy will be updated if the trust model changes. If it is declined, the issue will explain why (for example: expected browser sandbox behavior, or a development-only Vite advisory that does not ship in `dist/`).

@@ -1,9 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import type { SerializedFileNode } from '../types';
 import { formatBytes, getExtensionColor, getExtensionCategory } from '../utils/helpers';
+import { findNodeByPath } from '../utils/tree';
 
 interface TreemapViewProps {
   rootNode: SerializedFileNode;
+  focusedPath: string;
+  onFocusPath: (path: string) => void;
   selectedNode: SerializedFileNode | null;
   onSelectNode: (node: SerializedFileNode) => void;
 }
@@ -24,11 +27,17 @@ interface TreemapRect {
 
 export const TreemapView: React.FC<TreemapViewProps> = ({
   rootNode,
+  focusedPath,
+  onFocusPath,
   selectedNode,
   onSelectNode
 }) => {
   const [hoveredRect, setHoveredRect] = useState<TreemapRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const layoutRoot = useMemo(
+    () => findNodeByPath(rootNode, focusedPath) ?? rootNode,
+    [rootNode, focusedPath]
+  );
 
   const width = 800;
   const height = 450;
@@ -92,9 +101,9 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
     };
 
     // Begin computing from root node
-    computeLayout(rootNode, 0, 0, width, height, 0);
+    computeLayout(layoutRoot, 0, 0, width, height, 0);
     return results;
-  }, [rootNode]);
+  }, [layoutRoot]);
 
   const rafRef = React.useRef<number | null>(null);
 
@@ -130,7 +139,7 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
       <div style={styles.header}>
         <h3 style={styles.title}>磁碟空間分佈圖 (Treemap)</h3>
         <p style={styles.description}>
-          區塊大小代表檔案/資料夾容量。雙擊資料夾區塊可進入檢視，點擊可選取檔案。
+          區塊大小代表檔案/資料夾容量。雙擊資料夾可鑽取進入，點擊可選取；與樹狀表共用目前目錄。
         </p>
       </div>
 
@@ -152,6 +161,9 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
               <g
                 key={`${r.path}-${idx}`}
                 onClick={() => onSelectNode(r.node)}
+                onDoubleClick={() => {
+                  if (r.kind === 'directory') onFocusPath(r.node.path);
+                }}
                 style={{ cursor: 'pointer' }}
                 onMouseEnter={() => setHoveredRect(r)}
               >
@@ -254,7 +266,7 @@ export const TreemapView: React.FC<TreemapViewProps> = ({
                 <div style={styles.tooltipRow}>
                   <span>比例:</span>
                   <span style={styles.tooltipValue}>
-                    {rootNode.size > 0 ? ((hoveredRect.size / rootNode.size) * 100).toFixed(2) : '0.00'}%
+                    {layoutRoot.size > 0 ? ((hoveredRect.size / layoutRoot.size) * 100).toFixed(2) : '0.00'}%
                   </span>
                 </div>
               </div>
