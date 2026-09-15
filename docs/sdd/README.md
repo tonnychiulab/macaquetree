@@ -10,6 +10,7 @@
 | --- | --- |
 | [architecture.md](./architecture.md) | 現況架構、信任邊界、資料流 |
 | [../audit/2026-09-15-source-inspection.md](../audit/2026-09-15-source-inspection.md) | 2026-09-15 原始碼檢測報告 |
+| [../handoff/2026-09-15.md](../handoff/2026-09-15.md) | 1.1.0 收工紀錄（佈署、物種文案、台灣用語） |
 | `openspec/specs/privacy-sandbox/spec.md` | 隱私與授權模型 |
 | `openspec/specs/directory-scan/spec.md` | 掃描引擎（Worker + fallback） |
 | `openspec/specs/tree-table/spec.md` | 樹狀表鑽取 / 搜尋 / 排序 |
