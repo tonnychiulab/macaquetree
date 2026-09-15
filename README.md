@@ -1,4 +1,4 @@
-# 🐒 MacaqueTree (台灣獼猴)
+# 🐒 MacaqueTree
 
 > **"Monkeys climb trees, MacaqueTree climbs your directory tree!"**
 >
@@ -17,7 +17,7 @@
 
 ## 🌟 核心理念與台灣特色 (Core Concepts & Rationale)
 
-*   **🐒 獼猴的攀爬喻意**：本專案以台灣唯一的特有種猴類 —— **「台灣獼猴 (Formosan Rock Macaque)」** 命名。台灣獼猴以敏捷的身手在叢林樹木間穿梭嬉戲；而我們的分析器就如同獼猴一般，在極短時間內遍歷、攀爬您指定的「目錄樹 (Directory Tree)」，找出隱藏在深處的大檔案。
+*   **🐒 獼猴的攀爬喻意**：本專案以**臺灣獼猴（Formosan Macaque，Macaca cyclopis）** 命名。台灣獼猴以敏捷的身手在叢林樹木間穿梭嬉戲；而我們的分析器就如同獼猴一般，在極短時間內遍歷、攀爬您指定的「目錄樹 (Directory Tree)」，找出隱藏在深處的大檔案。
 *   **🗽 自由與安全精神**：台灣象徵著民主與高度的自由開放。本專案秉持開源的自由精神，提供使用者一個安全、透明的工具。掃描結果留在目前分頁的記憶體中；本站是靜態前端，仍會下載網頁資產，但不會把目錄樹 POST 到應用程式後端。
 
 ---
