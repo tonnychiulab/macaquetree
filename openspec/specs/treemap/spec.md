@@ -1,6 +1,6 @@
 ## Purpose
 
-定義 WinDirStat 風格 SVG Treemap：以區塊面積表示容量、依副檔名著色、懸停顯示詳情，並說明目前點選與尚未實作的雙擊鑽取行為。
+定義 WinDirStat 風格 SVG Treemap：以區塊面積表示容量、依副檔名著色、游標停留顯示詳情，並說明目前點選與尚未實作的雙擊鑽取行為。
 
 ## Requirements
 
@@ -12,7 +12,7 @@
 - **THEN** SVG 顯示以掃描根為範圍的區塊圖，檔案色依副檔名、資料夾為半透明藍
 
 ### Requirement: Click selects, hover shows tooltip
-點擊區塊 SHALL 呼叫 `onSelectNode`。滑鼠懸停 SHALL 顯示名稱、路徑、類型、大小、相對掃描根的比例。目前沒有雙擊鑽取實作，儘管 UI 說明文字寫了「雙擊資料夾區塊可進入檢視」。
+點擊區塊 SHALL 呼叫 `onSelectNode`。滑鼠游標停留 SHALL 顯示名稱、路徑、類型、大小、相對掃描根的比例。目前沒有雙擊鑽取實作，儘管 UI 說明文字寫了「雙擊資料夾區塊可進入檢視」。
 
 #### Scenario: Select a rectangle
 - **WHEN** 使用者點擊某個區塊

@@ -33,7 +33,7 @@ export function WelcomeView({
               </>
             ) : (
               <>
-                <strong>當前瀏覽器將使用 Fallback 掃描模式。</strong>（由於 Firefox/Safari 尚未全面開放 Directory API，本工具已貼心實作了本地檔案流處理技術，功能不受影響）。
+                <strong>目前瀏覽器將使用 Fallback 掃描模式。</strong>（由於 Firefox/Safari 尚未全面開放 Directory API，本工具已實作本機檔案串流處理，功能不受影響）。
               </>
             )}
           </span>
@@ -71,7 +71,7 @@ export function WelcomeView({
         <div className="glass-panel" style={styles.featureCard}>
           <Zap size={22} color="var(--accent)" />
           <h4>極速多執行緒效能</h4>
-          <p>將繁複的磁碟遍歷任務完全託付於背景 Web Worker，不佔用 UI 主線程，流暢無卡頓。</p>
+          <p>將繁複的磁碟遍歷任務完全託付於背景 Web Worker，不佔用介面主執行緒，流暢無卡頓。</p>
         </div>
         <div className="glass-panel" style={styles.featureCard}>
           <LayoutGrid size={22} color="var(--accent)" />
@@ -81,7 +81,7 @@ export function WelcomeView({
         <div className="glass-panel" style={styles.featureCard}>
           <Layers size={22} color="var(--accent)" />
           <h4>深度樹狀鑽取 (Drill down)</h4>
-          <p>雙擊資料夾可像檔案總管一樣深度聚焦，配備動態麵包屑導航，追蹤大檔案簡單直覺。</p>
+          <p>雙擊資料夾可像檔案總管一樣深度聚焦，配備動態麵包屑導覽，追蹤大檔案簡單直覺。</p>
         </div>
       </div>
     </div>
