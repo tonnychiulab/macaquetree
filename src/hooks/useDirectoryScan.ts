@@ -141,7 +141,7 @@ export function useDirectoryScan() {
     resetProgress();
     setIsScanning(true);
     setKnownTotal(fileList.length);
-    setCurrentScanningPath('正在讀取上傳的目錄結構...');
+    setCurrentScanningPath('正在讀取所選的目錄結構...');
 
     const files = Array.from(fileList);
     const worker = createScanWorker();

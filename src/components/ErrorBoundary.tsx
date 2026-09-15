@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div style={styles.container}>
           <div className="glass-panel" style={styles.panel}>
             <Terminal size={32} color="var(--color-critical)" style={styles.icon} />
-            <h2 style={styles.title}>渲染發生錯誤</h2>
+            <h2 style={styles.title}>畫面發生錯誤</h2>
             <p style={styles.message}>
               顯示元件時發生非預期的錯誤：{this.state.error?.message}
             </p>

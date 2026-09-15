@@ -34,7 +34,7 @@
 - **THEN** 系統不顯示錯誤橫幅
 
 ### Requirement: Version and metadata
-UI 標題徽章 SHALL 顯示 `package.json` 的 version（目前 `1.1.0`），不含 `Web v` 前綴。`index.html` 的 author SHALL 為維護者帳號。倉庫 SHALL 含 `LICENSE`（MIT）。
+UI 標題徽章 SHALL 顯示 `package.json` 的 version（目前 `1.1.0`），不含 `Web v` 前綴。`index.html` 的 author SHALL 為維護者帳號。儲存庫 SHALL 含 `LICENSE`（MIT）。
 
 #### Scenario: User reads the header badge
 - **WHEN** 應用程式渲染 header

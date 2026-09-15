@@ -1,7 +1,7 @@
 # MacaqueTree SDD（OpenSpec）
 
 日期：2026-09-15  
-倉庫：https://github.com/tonnychiulab/macaquetree  
+儲存庫：https://github.com/tonnychiulab/macaquetree  
 規格系統：[OpenSpec](https://github.com/Fission-AI/openspec)（本機 CLI 1.12.0）
 
 本目錄是產品的 **Spec-Driven Development** 入口。行為真相在 `openspec/specs/`；今日原始碼檢測後的修正提案在 `openspec/changes/source-audit-remediation/`。

@@ -24,37 +24,37 @@
 
 ## ✨ 主要功能 (Key Features)
 
-*   **🚀 多執行緒高速掃描**：使用 **Web Worker** 多執行緒技術，將磁碟深度遞迴遍歷卸載至背景執行，UI 界面維持 60fps 流暢刷新，配備實時「掃描速度」儀表板。
-*   **🌳 樹狀目錄鑽取 (Drill down)**：支援折疊、排序、關鍵字搜尋，且雙擊任何資料夾即可像檔案總管一樣深度聚焦該目錄，結合動態麵包屑導航，輕鬆掌握資料夾脈絡。
-*   **📊 區塊圖譜（Treemap）**：純前端 SVG 高效渲染區塊圖，區塊大小即硬碟容量大小，色彩按「影片、圖片、壓縮檔、代碼」等副檔名對應，懸停時有浮動 Tooltip 顯示詳情。
+*   **🚀 多執行緒高速掃描**：使用 **Web Worker** 多執行緒技術，將磁碟深度遞迴遍歷交由背景執行，介面維持 60fps 流暢刷新，配備即時「掃描速度」儀表板。
+*   **🌳 樹狀目錄鑽取 (Drill down)**：支援摺疊、排序、關鍵字搜尋，且雙擊任何資料夾即可像檔案總管一樣深度聚焦該目錄，結合動態麵包屑導覽，輕鬆掌握資料夾脈絡。
+*   **📊 區塊圖譜（Treemap）**：純前端 SVG 高效繪製區塊圖，區塊大小即硬碟容量大小，色彩按「影片、圖片、壓縮檔、程式碼」等副檔名對應，滑鼠游標停留時有浮動 Tooltip 顯示詳情。
 *   **📄 掃描報告下載**：掃完可下載 Markdown 報告（摘要、TOP 10 大檔、副檔名、第一層資料夾），檔案在本機產生。
 *   **📈 副檔名統計與最大檔案排行**：包含副檔名分佈圓環圖（Doughnut Chart）與 TOP 10 最大檔案直條圖，快速鎖定空間殺手。
 *   **🛡️ 100% 隱私沙盒安全**：採用瀏覽器最新 **File System Access API (`showDirectoryPicker`)**。不需下載或安裝任何 exe/dmg，也不需上傳任何位元組到伺服器。
-*   **🔌 優雅退路 (Fallback Mode)**：對於尚未支持 showDirectoryPicker API 的瀏覽器（如 Firefox, Safari），系統貼心提供了 `webkitdirectory` 本地檔案流相容分析技術，保證跨平台無礙運作。
+*   **🔌 優雅退路 (Fallback Mode)**：對於尚未支援 showDirectoryPicker API 的瀏覽器（如 Firefox, Safari），系統提供 `webkitdirectory` 本機檔案串流相容分析，確保跨平台都能使用。
 
 ---
 
 ## 🏗️ 技術棧 (Tech Stack)
 
 *   **前端核心**: React 19 + TypeScript + Vite 8
-*   **圖標庫**: Lucide React
-*   **設計系統**: 全自定義 Vanilla CSS (Premium Dark Mode, Glassmorphism 磨砂玻璃質感)
+*   **圖示庫**: Lucide React
+*   **設計系統**: 全自訂 Vanilla CSS (Premium Dark Mode, Glassmorphism 磨砂玻璃質感)
 *   **多執行緒**: Web Worker (ES Module Worker inside Vite)
-*   **視覺化**: 純 React & SVG 原生高效渲染 (無重型可視化包加載，載入速度極快)
+*   **視覺化**: 純 React & SVG 原生高效繪製（無重型視覺化套件載入，載入速度極快）
 
 ---
 
 ## 🚀 快速開始 (Quick Start)
 
-想先試用不必克隆：打開 [線上體驗](https://macaquetree.tw365ai.workers.dev)。
+想先試用不必複製儲存庫：打開 [線上體驗](https://macaquetree.tw365ai.workers.dev)。
 
-### 1. 克隆專案 (Clone the Repository)
+### 1. 複製儲存庫 (Clone the Repository)
 ```bash
 git clone https://github.com/tonnychiulab/macaquetree.git
 cd macaquetree
 ```
 
-### 2. 安裝依賴 (Install Dependencies)
+### 2. 安裝套件 (Install Dependencies)
 ```bash
 npm install
 ```
@@ -78,7 +78,7 @@ npm run build
 本專案未來的功能迭代與版本將以**台灣著名山岳**命名，象徵台灣獼猴自由攀爬的高山頂峰：
 
 *   **v1.0.0 `Alishan (阿里山)`** — 核心 Web Worker 掃描與 Treemap/樹狀表格基礎架構
-*   **v1.1.0 `Bailu (百岳)`** — Markdown 掃描報告、森林主題與瀏覽器圖示 [當前版本]
+*   **v1.1.0 `Bailu (百岳)`** — Markdown 掃描報告、森林主題與瀏覽器圖示 [目前版本]
 *   **v1.2.0 `Tawu (大武山)`** — 匯出分析報告 (CSV, JSON) 與掃描歷史紀錄快照對比
 *   **v1.3.0 `Syue (雪霸)`** — 重複檔案分析 (Duplicate Files Finder) 與零位元組空資料夾篩選
 *   **v2.0.0 `Yushan (玉山)`** — 全能進階跨瀏覽器離線應用 (PWA) 完整支援
